@@ -21,7 +21,7 @@ const API_BASE_URL = "http://127.0.0.1:8000"
 
 const translations: Record<string, Record<string, string>> = {
   English: {
-    back: "{t.back}",
+    back: "← Back to Schemes",
     overview: "Overview",
     eligibility: "Eligibility",
     benefits: "Benefits",
@@ -32,7 +32,7 @@ const translations: Record<string, Record<string, string>> = {
     schemeCategory: "{t.schemeCategory}",
     schemeLevel: "{t.schemeLevel}",
     source: "{t.source}",
-    tags: "Tags",
+    tags: "{t.tags}",
     eligibilityInfo: "{t.eligibilityInfo}",
     important: "Important",
     requiredDocuments: "{t.requiredDocuments}",
@@ -40,12 +40,12 @@ const translations: Record<string, Record<string, string>> = {
     schemeSummary: "{t.schemeSummary}",
     scheme: "Scheme",
     status: "Status",
-    informationAvailable: "{t.informationAvailable}",
+    informationAvailable: "Information Available",
     applicationInfo: "{t.applicationInfo}",
     importantInfo: "{t.importantInfo}",
     language: "Language",
     languageNote: "Scheme information is currently shown from the available dataset. Interface labels are translated.",
-    sourceName: "{t.sourceName}",
+    sourceName: "GovAssist Scheme Dataset",
   },
   Tamil: {
     back: "← திட்டங்களுக்குத் திரும்பு",
@@ -337,12 +337,30 @@ const SchemeDetailsPage = ({
             </div>
           </div>
 
-          <button
-            onClick={() => window.history.back()}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            ← Back to Schemes
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="hidden text-xs font-semibold text-slate-500 sm:block">
+              {t.language}
+            </label>
+            <select
+              value={language}
+              onChange={(event) => {
+                setLanguage(event.target.value)
+                setActiveTab("Overview")
+              }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-[#073b6f]"
+              aria-label={t.language}
+            >
+              {Object.keys(translations).map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => window.history.back()}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {t.back}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -402,7 +420,7 @@ const SchemeDetailsPage = ({
               {activeTab === "Overview" && (
                 <div>
                   <h3 className="text-xl font-bold text-[#073b6f]">
-                    Scheme Overview
+                    {t.schemeOverview}
                   </h3>
 
                   <p className="mt-4 whitespace-pre-line leading-7 text-slate-600">
@@ -411,22 +429,22 @@ const SchemeDetailsPage = ({
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2">
                     <InfoBox
-                      label="Scheme Name"
+                      label="{t.schemeName}"
                       value={scheme.scheme_name}
                     />
 
                     <InfoBox
-                      label="Scheme Category"
+                      label="{t.schemeCategory}"
                       value={scheme.schemeCategory || "Not specified"}
                     />
 
                     <InfoBox
-                      label="Scheme Level"
+                      label="{t.schemeLevel}"
                       value={scheme.level || "Not specified"}
                     />
 
                     <InfoBox
-                      label="Information Source"
+                      label="{t.source}"
                       value="GovAssist Scheme Dataset"
                     />
                   </div>
@@ -434,7 +452,7 @@ const SchemeDetailsPage = ({
                   {scheme.tags && (
                     <div className="mt-8">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Tags
+                        {t.tags}
                       </p>
 
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -465,7 +483,7 @@ const SchemeDetailsPage = ({
 
                   <div className="mt-6 rounded-xl bg-[#f7f9fc] p-5">
                     <p className="text-sm font-semibold text-slate-700">
-                      Eligibility Information
+                      {t.eligibilityInfo}
                     </p>
 
                     <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
@@ -509,7 +527,7 @@ const SchemeDetailsPage = ({
               {activeTab === "Documents" && (
                 <div>
                   <h3 className="text-xl font-bold text-[#073b6f]">
-                    Required Documents
+                    {t.requiredDocuments}
                   </h3>
 
                   <div className="mt-6 rounded-xl bg-slate-50 p-5">
@@ -551,7 +569,7 @@ const SchemeDetailsPage = ({
             {/* Summary */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-bold text-[#073b6f]">
-                Scheme Summary
+                {t.schemeSummary}
               </h3>
 
               <div className="mt-5 space-y-4">
@@ -580,14 +598,14 @@ const SchemeDetailsPage = ({
                 onClick={() => setActiveTab("How to Apply")}
                 className="mt-6 w-full rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
               >
-                Application Information →
+                {t.applicationInfo}
               </button>
             </div>
 
-            {/* Important Information */}
+            {/* {t.importantInfo} */}
             <div className="rounded-2xl border border-[#ead89a] bg-[#fff9df] p-6">
               <h3 className="font-bold text-slate-800">
-                Important Information
+                {t.importantInfo}
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-600">
