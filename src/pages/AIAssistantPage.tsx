@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 
 const API_BASE_URL = "http://127.0.0.1:8000"
 
@@ -16,6 +17,7 @@ const suggestedQuestions = [
 ]
 
 const AIAssistantPage = () => {
+  const { t } = useLanguage()
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -142,7 +144,8 @@ const AIAssistantPage = () => {
           >
             ← Back
           </button>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       {/* Main content */}
