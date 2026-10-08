@@ -57,7 +57,7 @@ const AIAssistantPage = () => {
     },
   ])
 
-  const handleSend = async (messageText?: string) => {
+  const handle{t("send")} = async (messageText?: string) => {
     const text = (messageText ?? input).trim()
 
     if (!text) return
@@ -117,7 +117,7 @@ const AIAssistantPage = () => {
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
       {/* Top utility bar */}
       <div className="bg-[#071d35] px-4 py-1.5 text-center text-[11px] text-white/80">
-        Government Scheme Recommendation & AI Assistant
+        {t("brandTagline")}
       </div>
 
       {/* Header */}
@@ -133,7 +133,7 @@ const AIAssistantPage = () => {
                 GovAssist
               </h1>
               <p className="text-[11px] text-slate-500">
-                Government Scheme Recommendation & AI Assistant
+                {t("brandTagline")}
               </p>
             </div>
           </div>
@@ -142,7 +142,7 @@ const AIAssistantPage = () => {
             onClick={() => window.history.back()}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            ← Back
+            {t("back")}
           </button>
         <LanguageSwitcher />
           </div>
@@ -159,10 +159,10 @@ const AIAssistantPage = () => {
 
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#07845b]">
-                AI Assistant
+                {t("aiAssistant")}
               </p>
               <h2 className="text-2xl font-extrabold text-[#073b6f] md:text-3xl">
-                Ask GovAssist AI
+                {t("aiAssistant")}
               </h2>
             </div>
           </div>
@@ -187,7 +187,7 @@ const AIAssistantPage = () => {
                   GovAssist AI
                 </p>
                 <p className="text-[11px] text-[#07845b]">
-                  Scheme information assistant
+                  {t("aiAnswers")}
                 </p>
               </div>
             </div>
@@ -196,7 +196,7 @@ const AIAssistantPage = () => {
               onClick={handleClearChat}
               className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             >
-              Clear Chat
+              {t("clearChat")}
             </button>
           </div>
 
@@ -241,14 +241,14 @@ const AIAssistantPage = () => {
           {/* Suggested questions */}
           <div className="border-t border-slate-200 bg-white px-4 py-3">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-              Suggested Questions
+              {t("suggestedQuestions")}
             </p>
 
             <div className="flex gap-2 overflow-x-auto pb-0.5">
               {suggestedQuestions.map((question) => (
                 <button
                   key={question}
-                  onClick={() => handleSend(question)}
+                  onClick={() => handle{t("send")}(question)}
                   className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition hover:border-[#073b6f] hover:bg-[#eef4fb] hover:text-[#073b6f]"
                 >
                   {question}
@@ -266,19 +266,19 @@ const AIAssistantPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
-                    handleSend()
+                    handle{t("send")}()
                   }
                 }}
                 rows={1}
-                placeholder="Ask about government schemes..."
+                placeholder="{t("askSchemesPlaceholder")}"
                 className="min-h-[42px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
               />
 
               <button
-                onClick={() => handleSend()}
+                onClick={() => handle{t("send")}()}
                 className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59]"
               >
-                Send
+                {t("send")}
               </button>
             </div>
 
@@ -306,7 +306,7 @@ const AIAssistantPage = () => {
           <div>
             <p className="text-sm font-bold">GovAssist</p>
             <p className="text-[10px] text-white/70">
-              Government Scheme Recommendation & AI Assistant
+              {t("brandTagline")}
             </p>
           </div>
 
