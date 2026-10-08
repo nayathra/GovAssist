@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -15,11 +16,14 @@ def _clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df.fillna("")
 
 
+@lru_cache(maxsize=1)
 def load_schemes() -> pd.DataFrame:
     """
     Load schemes from MongoDB when configured, otherwise use the local CSV.
 
-    The CSV fallback keeps local development working before MongoDB is set up.
+    The loaded dataset is cached in memory so recommendation requests do not
+    download and rebuild the full 3,400-row dataset on every request.
+    Restart the backend after changing the database contents or migrating data.
     """
     if os.getenv("MONGODB_URI", "").strip():
         collection = get_schemes_collection()
