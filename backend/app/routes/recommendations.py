@@ -126,38 +126,40 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             "Uttar Pradesh", "Uttarakhand", "West Bengal",
         )
         normalized_profile_state = profile.state.lower().strip()
-
-        # Direct residence/domicile wording in eligibility.
         restricted_states: list[str] = []
+
         for state_name in indian_states:
             state_lower = state_name.lower()
             if state_lower == normalized_profile_state:
                 continue
+
             direct_patterns = (
-                rf"resid(?:ing|ence)\\s+(?:in|of)\\s+{re.escape(state_lower)}",
-                rf"domicile\\s+(?:of|in)\\s+{re.escape(state_lower)}",
-                rf"native\\s+(?:of|to)\\s+{re.escape(state_lower)}",
-                rf"state\\s+of\\s+{re.escape(state_lower)}",
-                rf"from\\s+the\\s+state\\s+of\\s+{re.escape(state_lower)}",
+                rf"resid(?:ing|ence)\s+(?:in|of)\s+{re.escape(state_lower)}",
+                rf"domicile\s+(?:of|in)\s+{re.escape(state_lower)}",
+                rf"native\s+(?:of|to)\s+{re.escape(state_lower)}",
+                rf"state\s+of\s+{re.escape(state_lower)}",
+                rf"from\s+the\s+state\s+of\s+{re.escape(state_lower)}",
             )
             if any(re.search(pattern, eligibility, re.IGNORECASE) for pattern in direct_patterns):
                 restricted_states.append(state_name)
 
         # State-level schemes can also identify their jurisdiction in the
-        # description, e.g. "Government of Chhattisgarh". This prevents a
-        # Chhattisgarh scheme from being recommended to a Tamil Nadu profile.
+        # description, e.g. "Government of Chhattisgarh".
         if str(row.get("level", "")).strip().lower() == "state":
             scheme_context = " ".join(
                 str(row.get(field, "")) for field in ("scheme_name", "details", "benefits")
             ).lower()
+
             for state_name in indian_states:
                 state_lower = state_name.lower()
                 if state_lower == normalized_profile_state:
                     continue
+
                 state_patterns = (
-                    rf"government\\s+of\\s+{re.escape(state_lower)}",
-                    rf"govt\\.?\\s+of\\s+{re.escape(state_lower)}",
-                    rf"department[^.]{0,100}\\b{re.escape(state_lower)}\\b",
+                    rf"government\s+of\s+{re.escape(state_lower)}",
+                    rf"govt\.?\s+of\s+{re.escape(state_lower)}",
+                    rf"department[^.]{0,100}\b{re.escape(state_lower)}\b",
+                    rf"government\s+of\s+{re.escape(state_lower.split()[0])}\b",
                 )
                 if any(re.search(pattern, scheme_context, re.IGNORECASE) for pattern in state_patterns):
                     restricted_states.append(state_name)
@@ -167,8 +169,7 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                 f"The scheme appears restricted to {restricted_states[0]}, not {profile.state}."
             )
 
-    # Explicit age thresholds. These are treated as hard conflicts only when
-    # the profile age is definitely outside the stated limit.
+    # Explicit age thresholds.
     if profile.age:
         try:
             age = int(profile.age)
@@ -185,30 +186,27 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                     maximum = int(match.group(1))
                     if age > maximum:
                         conflicts.append(f"Profile age {age} is above the stated maximum age of {maximum}.")
-                        break
 
             min_age_patterns = [
                 r"(?:above|over|at least|minimum(?: age)? of)\s*(\d{1,3})\s*(?:years?|yrs?)?",
                 r"age\s*(?:should be|must be|is)?\s*(?:above|over)\s*(\d{1,3})",
+                r"age\s*(?:should be|must be|is)\s*(\d{1,3})\s*(?:years?|yrs?)?\s*(?:and above|or above|and over|or over)",
+                r"(?:applicant|beneficiary)[^.;]{0,40}?age\s*(?:should be|must be|is)\s*(\d{1,3})\s*(?:years?|yrs?)?\s*(?:and above|or above|and over|or over)",
             ]
             for pattern in min_age_patterns:
                 for match in re.finditer(pattern, eligibility):
                     minimum = int(match.group(1))
                     if age < minimum:
                         conflicts.append(f"Profile age {age} is below the stated minimum age of {minimum}.")
-                        break
 
-            # "Girl child"/"boy child" can have scheme-specific definitions.
-            # Keep this as a warning rather than inventing an age definition.
             if age >= 18 and _has(eligibility, "girl child", "boy child", "child beneficiary"):
-                warnings.append("The eligibility mentions a child-related condition; the available profile does not establish the scheme's exact definition of 'child'.")
+                warnings.append(
+                    "The eligibility mentions a child-related condition; the available profile does not establish the scheme's exact definition of 'child'."
+                )
 
-    # Income thresholds. A broad profile range cannot prove an exact upper
-    # threshold, but it can rule a scheme out when the whole range is above it.
+    # Income thresholds.
     bounds = _profile_income_bounds(profile.income)
     if bounds:
-        _, profile_max = bounds
-
         upper_patterns = [
             r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
             r"(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?\s*(?:or less|and below|per annum or less)",
@@ -220,10 +218,20 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                     conflicts.append(
                         f"The selected income range is entirely above the stated income limit of ₹{amount:,.0f}."
                     )
-                    break
 
         if _has(eligibility, "income certificate", "annual income") and profile.income == "Below ₹1 Lakh":
-            warnings.append("The profile gives an income range; exact income thresholds in the scheme data may still need verification.")
+            warnings.append(
+                "The profile gives an income range; exact income thresholds in the scheme data may still need verification."
+            )
+
+    # Important conditions that the current profile form cannot directly
+    # verify. Keep these as warnings instead of pretending they are satisfied.
+    if _has(eligibility, "destitute"):
+        warnings.append("The scheme mentions a destitute-status requirement; the current profile does not establish this condition.")
+    if _has(eligibility, "fixed assets", "total assets", "movable and immovable assets"):
+        warnings.append("The scheme mentions an asset-value requirement; the current profile does not establish the applicant's asset value.")
+    if _has(eligibility, "returned migrant", "return migrant", "migrant workers returned", "returned to tamil nadu"):
+        warnings.append("The scheme mentions a returned-migrant condition; the current profile does not establish this condition.")
 
     return list(dict.fromkeys(conflicts)), list(dict.fromkeys(warnings))
 
@@ -237,7 +245,6 @@ def _score_profile(
 
     conflicts, warnings = _eligibility_conflicts(row, profile)
 
-    # A definite contradiction should keep the scheme out of the top results.
     if conflicts:
         return None
 
@@ -274,9 +281,7 @@ def _score_profile(
         score += 20
         _add_match(matches, "Student status")
 
-    if profile.education and profile.education != "Prefer not to say" and _has_word(
-        text, profile.education
-    ):
+    if profile.education and profile.education != "Prefer not to say" and _has_word(text, profile.education):
         score += 10
         _add_match(matches, "Education")
 
@@ -389,3 +394,4 @@ def get_recommendations(profile: ProfileRequest):
         "recommendations": recommendations[:12],
         "disclaimer": "These are potentially relevant schemes based on profile signals found in the available scheme data. This does not determine or guarantee official eligibility.",
     }
+}
