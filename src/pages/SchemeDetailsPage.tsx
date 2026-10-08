@@ -27,22 +27,22 @@ const translations: Record<string, Record<string, string>> = {
     benefits: "Benefits",
     documents: "Documents",
     howToApply: "How to Apply",
-    schemeOverview: "{t.schemeOverview}",
-    schemeName: "{t.schemeName}",
-    schemeCategory: "{t.schemeCategory}",
-    schemeLevel: "{t.schemeLevel}",
-    source: "{t.source}",
-    tags: "{t.tags}",
-    eligibilityInfo: "{t.eligibilityInfo}",
+    schemeOverview: "Scheme Overview",
+    schemeName: "Scheme Name",
+    schemeCategory: "Scheme Category",
+    schemeLevel: "Scheme Level",
+    source: "Information Source",
+    tags: "Tags",
+    eligibilityInfo: "Eligibility Information",
     important: "Important",
-    requiredDocuments: "{t.requiredDocuments}",
+    requiredDocuments: "Required Documents",
     noInfo: "No information is available in the dataset.",
-    schemeSummary: "{t.schemeSummary}",
+    schemeSummary: "Scheme Summary",
     scheme: "Scheme",
     status: "Status",
     informationAvailable: "Information Available",
-    applicationInfo: "{t.applicationInfo}",
-    importantInfo: "{t.importantInfo}",
+    applicationInfo: "Application Information →",
+    importantInfo: "Important Information",
     language: "Language",
     languageNote: "Scheme information is currently shown from the available dataset. Interface labels are translated.",
     sourceName: "GovAssist Scheme Dataset",
@@ -429,22 +429,22 @@ const SchemeDetailsPage = ({
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2">
                     <InfoBox
-                      label="{t.schemeName}"
+                      label={t.schemeName}
                       value={scheme.scheme_name}
                     />
 
                     <InfoBox
-                      label="{t.schemeCategory}"
+                      label={t.schemeCategory}
                       value={scheme.schemeCategory || "Not specified"}
                     />
 
                     <InfoBox
-                      label="{t.schemeLevel}"
+                      label={t.schemeLevel}
                       value={scheme.level || "Not specified"}
                     />
 
                     <InfoBox
-                      label="{t.source}"
+                      label={t.source}
                       value="GovAssist Scheme Dataset"
                     />
                   </div>
@@ -574,23 +574,23 @@ const SchemeDetailsPage = ({
 
               <div className="mt-5 space-y-4">
                 <SummaryRow
-                  label="Scheme"
+                  label={t.scheme}
                   value={scheme.scheme_name}
                 />
 
                 <SummaryRow
-                  label="Category"
+                  label={t.schemeCategory}
                   value={scheme.schemeCategory || "Not specified"}
                 />
 
                 <SummaryRow
-                  label="Level"
+                  label={t.schemeLevel}
                   value={scheme.level || "Not specified"}
                 />
 
                 <SummaryRow
-                  label="Status"
-                  value="Information Available"
+                  label={t.status}
+                  value={t.informationAvailable}
                 />
               </div>
 
