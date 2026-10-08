@@ -1,5 +1,7 @@
 import { useState } from "react"
 
+const API_BASE_URL = "http://127.0.0.1:8000"
+
 type Message = {
   id: number
   type: "ai" | "user"
@@ -53,7 +55,7 @@ const AIAssistantPage = () => {
     },
   ])
 
-  const handleSend = (messageText?: string) => {
+  const handleSend = async (messageText?: string) => {
     const text = (messageText ?? input).trim()
 
     if (!text) return
@@ -64,14 +66,39 @@ const AIAssistantPage = () => {
       text,
     }
 
-    const aiMessage: Message = {
-      id: Date.now() + 1,
-      type: "ai",
-      text: "This is a frontend demo response. In the backend stage, GovAssist will retrieve relevant scheme information from the database and provide an answer based on the available scheme data.",
-    }
-
-    setMessages((previous) => [...previous, userMessage, aiMessage])
+    setMessages((previous) => [...previous, userMessage])
     setInput("")
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Assistant request failed")
+      }
+
+      const data = await response.json()
+
+      const aiMessage: Message = {
+        id: Date.now() + 1,
+        type: "ai",
+        text: data.answer,
+      }
+
+      setMessages((previous) => [...previous, aiMessage])
+    } catch {
+      setMessages((previous) => [
+        ...previous,
+        {
+          id: Date.now() + 1,
+          type: "ai",
+          text: "I couldn't connect to the GovAssist backend right now. Please make sure the backend server is running and try again.",
+        },
+      ])
+    }
   }
 
   const handleClearChat = () => {
