@@ -113,24 +113,37 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     ):
         conflicts.append("Eligibility appears restricted to females/women.")
 
-    # Explicit state/residence restrictions. Only treat a state as a hard
-    # requirement when the eligibility text directly ties residence/domicile
-    # to that state. General mentions of other states elsewhere are ignored.
+    # Explicit state/residence restrictions. Only use state names when
+    # they occur in a direct eligibility phrase, not in general scheme text.
     if profile.state and profile.state != "Other / All India":
-        state_pattern = re.compile(
-            r"(?:resid(?:ing|ence)|domicile|native|belong(?:ing)?|state)\\s*(?:in|of|from|:)?\\s*([a-z][a-z .&-]{2,50})",
-            re.IGNORECASE,
+        indian_states = (
+            "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+            "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
+            "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
+            "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+            "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+            "Uttar Pradesh", "Uttarakhand", "West Bengal",
         )
-        explicit_states = {m.group(1).strip(" .,:;") for m in state_pattern.finditer(eligibility)}
         normalized_profile_state = profile.state.lower().strip()
-        state_conflicts = []
-        for stated in explicit_states:
-            normalized_stated = re.sub(r"\\s+", " ", stated.lower()).strip()
-            if normalized_profile_state not in normalized_stated and normalized_stated not in normalized_profile_state:
-                state_conflicts.append(stated)
-        if state_conflicts:
+        restricted_states: list[str] = []
+
+        for state_name in indian_states:
+            state_lower = state_name.lower()
+            if state_lower == normalized_profile_state:
+                continue
+            direct_patterns = (
+                rf"resid(?:ing|ence)\\s+(?:in|of)\\s+{re.escape(state_lower)}",
+                rf"domicile\\s+(?:of|in)\\s+{re.escape(state_lower)}",
+                rf"native\\s+(?:of|to)\\s+{re.escape(state_lower)}",
+                rf"state\\s+of\\s+{re.escape(state_lower)}",
+                rf"from\\s+the\\s+state\\s+of\\s+{re.escape(state_lower)}",
+            )
+            if any(re.search(pattern, eligibility, re.IGNORECASE) for pattern in direct_patterns):
+                restricted_states.append(state_name)
+
+        if restricted_states:
             conflicts.append(
-                f"The eligibility appears restricted to {state_conflicts[0]}, not {profile.state}."
+                f"The eligibility appears restricted to {restricted_states[0]}, not {profile.state}."
             )
 
     # Explicit age thresholds. These are treated as hard conflicts only when
