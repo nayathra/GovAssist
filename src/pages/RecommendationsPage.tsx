@@ -12,6 +12,7 @@ type Recommendation = {
   tags: string
   relevance_score: number
   matched_profile_signals: string[]
+  eligibility_warnings: string[]
 }
 
 const API_BASE_URL = "http://127.0.0.1:8000"
@@ -119,6 +120,16 @@ const RecommendationsPage = ({
                           <span key={signal} className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">{signal}</span>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {scheme.eligibility_warnings.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-[#ead7a0] bg-[#fff8df] p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-[#6b5410]">Eligibility to verify</p>
+                      <ul className="mt-2 space-y-1 text-xs leading-5 text-[#705f28]">
+                        {scheme.eligibility_warnings.map((warning) => (
+                          <li key={warning}>• {warning}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                   <button onClick={() => onViewDetails(scheme.slug)} className="mt-6 rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]">View Scheme Details →</button>
