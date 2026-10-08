@@ -219,6 +219,29 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                 "The profile gives an income range; exact income thresholds in the scheme data may still need verification."
             )
 
+    # Profile-known beneficiary restrictions. These should be hard conflicts
+    # when the profile explicitly says the condition is not present.
+    if profile.disabilityStatus == "No" and _has(
+        eligibility,
+        "persons with disabilities",
+        "persons with disability",
+        "disabled persons",
+        "hearing impaired",
+        "visually impaired",
+        "visual impairment",
+        "hearing impairment",
+        "divyang",
+    ):
+        conflicts.append("The scheme appears intended for persons with disabilities, but the profile says disability is No.")
+
+    if profile.maritalStatus and profile.maritalStatus != "Widowed" and _has(
+        eligibility,
+        "widow",
+        "widows",
+        "widowed",
+    ):
+        conflicts.append("The scheme appears restricted to widows/widowed applicants.")
+
     # Conditions that the current profile form cannot directly verify.
     if _has(eligibility, "destitute"):
         warnings.append(
