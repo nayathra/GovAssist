@@ -62,11 +62,10 @@ const DashboardPage = ({
             {t("dashboard")}
           </p>
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
-            Welcome back, {user.name.split(" ")[0]} 👋
+            {t("welcomeBack")}, {user.name.split(" ")[0]} 👋
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
-            Continue exploring government scheme information and discover
-            schemes that may be relevant to your profile.
+            {t("dashboardDesc")}
           </p>
         </section>
 
