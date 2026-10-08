@@ -50,7 +50,7 @@ const SchemeDetailsPage = ({
         )
 
         if (!response.ok) {
-          throw new Error("Scheme not found")
+          throw new Error("{t("schemeNotFound")}")
         }
 
         const data = await response.json()
@@ -94,7 +94,7 @@ const SchemeDetailsPage = ({
     return (
       <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
         <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
-          Government Scheme Recommendation & AI Assistant
+          {t("brandTagline")}
         </div>
 
         <div className="flex min-h-[70vh] items-center justify-center px-6">
@@ -102,11 +102,11 @@ const SchemeDetailsPage = ({
             <div className="text-4xl">⏳</div>
 
             <h2 className="mt-4 text-xl font-bold text-[#073b6f]">
-              Loading scheme details...
+              {t("loading")}
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              Fetching information from the GovAssist scheme database.
+              {t("fetchingSchemes")}
             </p>
           </div>
         </div>
@@ -118,7 +118,7 @@ const SchemeDetailsPage = ({
     return (
       <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
         <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
-          Government Scheme Recommendation & AI Assistant
+          {t("brandTagline")}
         </div>
 
         <div className="flex min-h-[70vh] items-center justify-center px-6">
@@ -126,7 +126,7 @@ const SchemeDetailsPage = ({
             <div className="text-4xl">⚠️</div>
 
             <h2 className="mt-4 text-xl font-bold text-[#073b6f]">
-              Scheme not found
+              {t("schemeNotFound")}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -138,7 +138,7 @@ const SchemeDetailsPage = ({
               onClick={() => window.history.back()}
               className="mt-6 rounded-xl bg-[#073b6f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
             >
-              ← Back to Schemes
+              {t("backToSchemes")}
             </button>
           </div>
         </div>
@@ -150,7 +150,7 @@ const SchemeDetailsPage = ({
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
       {/* Top utility bar */}
       <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
-        Government Scheme Recommendation & AI Assistant
+        {t("brandTagline")}
       </div>
 
       {/* Header */}
@@ -167,7 +167,7 @@ const SchemeDetailsPage = ({
               </h1>
 
               <p className="text-xs text-slate-500">
-                Government Scheme Recommendation & AI Assistant
+                {t("brandTagline")}
               </p>
             </div>
           </div>
@@ -458,12 +458,12 @@ const SchemeDetailsPage = ({
             <p className="font-bold">GovAssist</p>
 
             <p className="mt-1 text-xs text-white/70">
-              Government Scheme Recommendation & AI Assistant
+              {t("brandTagline")}
             </p>
           </div>
 
           <p className="text-xs text-white/70">
-            Student project • Not an official government website
+            {t("academicFooter")}
           </p>
         </div>
       </footer>
