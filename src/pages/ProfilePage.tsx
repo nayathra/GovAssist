@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-type Profile = {
+export type Profile = {
   name: string
   age: string
   gender: string
@@ -119,7 +119,11 @@ const Field = ({
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#102a43] outline-none transition placeholder:text-slate-400 focus:border-[#0b63b6] focus:ring-4 focus:ring-[#0b63b6]/10"
 
-const ProfilePage = () => {
+const ProfilePage = ({
+  onFindSchemes,
+}: {
+  onFindSchemes: (profile: Profile) => void
+}) => {
   const [profile, setProfile] = useState<Profile>(initialProfile)
 
   const update = (field: keyof Profile, value: string) => {
@@ -128,8 +132,7 @@ const ProfilePage = () => {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    console.log("GovAssist profile:", profile)
-    alert("Profile saved. The recommendation engine will use these details to find potentially relevant schemes.")
+    onFindSchemes(profile)
   }
 
   return (
