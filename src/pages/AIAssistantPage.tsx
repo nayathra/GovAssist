@@ -16,7 +16,7 @@ const suggestedQuestions = [
   "What documents are usually mentioned in scheme information?",
 ]
 
-const AIAssistantPage = () => {
+const AIAssistantPage = ({\n  onViewScheme,\n}: {\n  onViewScheme?: (schemeSlug: string) => void\n}) => {
   const { t } = useLanguage()
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
