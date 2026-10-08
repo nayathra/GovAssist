@@ -19,7 +19,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
   const [mode, setMode] = useState<"login" | "register">("login")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [password, set{t("password")}] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -96,8 +96,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
               {t("discoverEasier")}
             </h1>
             <p className="mt-5 text-sm leading-6 text-blue-100">
-              Create your GovAssist account to keep your profile and continue
-              exploring potentially relevant government schemes.
+              {t("createAccountDesc")}
             </p>
 
             <div className="mt-10 space-y-4 text-sm text-blue-100">
@@ -147,7 +146,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
               <p className="mt-2 text-sm text-slate-500">
                 {mode === "login"
                   ? t("continueExploring")
-                  : "{t("accountContinue")}"}
+                  : t("accountContinue")}
               </p>
             </div>
 
@@ -188,7 +187,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
                 <input
                   type="password"
                   value={password}
-                  onChange={(event) => set{t("password")}(event.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
                   minLength={6}
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
@@ -211,13 +210,12 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
                   ? t("pleaseWait")
                   : mode === "login"
                     ? t("loginGovAssist")
-                    : "Create Account"}
+                    : t("createAccount")}
               </button>
             </form>
 
             <p className="mt-6 text-center text-[11px] leading-5 text-slate-400">
-              Academic project authentication. Do not use sensitive or reused
-              passwords.
+              {t("authNote")}
             </p>
           </div>
         </div>
