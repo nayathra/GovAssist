@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, use{t("state")} } from "react"
 import { LanguageSwitcher, useLanguage } from "../i18n"
 import type { Profile } from "./ProfilePage"
 
@@ -31,7 +31,7 @@ const DashboardPage = ({
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-[#102a43]">
       <div className="bg-[#073b6f] px-6 py-2 text-center text-xs text-white">
-        Government Scheme Recommendation & AI Assistant
+        {t("brandTagline")}
       </div>
 
       <header className="border-b border-slate-200 bg-white">
@@ -59,7 +59,7 @@ const DashboardPage = ({
       <main className="mx-auto max-w-[1250px] px-5 py-8 sm:px-8 sm:py-10">
         <section className="rounded-3xl bg-[#073b6f] p-7 text-white shadow-lg sm:p-9">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#63d6a9]">
-            Your Dashboard
+            {t("dashboard")}
           </p>
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
             Welcome back, {user.name.split(" ")[0]} 👋
@@ -75,27 +75,27 @@ const DashboardPage = ({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-[#0f8a5f]">
-                  My Profile
+                  {t("profile")}
                 </p>
                 <h2 className="mt-2 text-xl font-extrabold text-[#102a43]">
-                  {profileComplete ? "Profile ready" : "Complete your profile"}
+                  {profileComplete ? "{t("profile{t("ready")}")}" : "{t("completeProfile")}"}
                 </h2>
               </div>
               <button
                 onClick={onProfile}
                 className="rounded-lg border border-[#b8cde0] px-3 py-2 text-xs font-bold text-[#073b6f] hover:bg-[#f2f7fb]"
               >
-                {profileComplete ? "Edit Profile" : "Create Profile"}
+                {profileComplete ? "{t("editProfile")}" : "{t("createProfile")}"}
               </button>
             </div>
 
             {profileComplete ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-4">
                 {[
-                  ["State", profile?.state],
-                  ["Occupation", profile?.occupation],
-                  ["Age", profile?.age],
-                  ["Student", profile?.studentStatus || "Not specified"],
+                  ["{t("state")}", profile?.state],
+                  ["{t("occupation")}", profile?.occupation],
+                  ["{t("age")}", profile?.age],
+                  ["{t("student")}", profile?.studentStatus || "Not specified"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl bg-[#f7f9fc] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
@@ -113,7 +113,7 @@ const DashboardPage = ({
 
           <div className="rounded-2xl border border-[#cfe2d9] bg-[#eef9f4] p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-[#0f8a5f]">
-              Profile status
+              {t("profileStatus")}
             </p>
             <div className="mt-4 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0f8a5f] text-lg font-extrabold text-white">
@@ -121,10 +121,10 @@ const DashboardPage = ({
               </div>
               <div>
                 <p className="text-lg font-extrabold text-[#102a43]">
-                  {profileComplete ? "Ready" : "Incomplete"}
+                  {profileComplete ? "{t("ready")}" : "{t("incomplete")}"}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {profileComplete ? "You can explore recommendations." : "Complete your profile first."}
+                  {profileComplete ? "{t("canExploreRecommendations")}" : "{t("completeProfile")} first."}
                 </p>
               </div>
             </div>
@@ -134,39 +134,39 @@ const DashboardPage = ({
         <section className="mt-6">
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f8a5f]">
-              Quick Access
+              {t("quickAccess")}
             </p>
             <h2 className="mt-1 text-2xl font-extrabold text-[#102a43]">
-              What would you like to do?
+              {t("whatWouldYouLike")}
             </h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                title: "My Recommendations",
-                text: "View schemes that may match your profile.",
+                title: "{t("recommendations")}",
+                text: "{t("recommendationDesc")}",
                 icon: "01",
                 action: onRecommendations,
                 disabled: !profileComplete,
               },
               {
-                title: "Explore Schemes",
-                text: "Search and browse the complete scheme database.",
+                title: "{t("exploreSchemes")}",
+                text: "{t("exploreDesc")}",
                 icon: "02",
                 action: onSchemes,
                 disabled: false,
               },
               {
-                title: "Ask GovAssist AI",
-                text: "Ask questions about available scheme information.",
+                title: "{t("aiAssistant")}",
+                text: "{t("aiDesc")}",
                 icon: "03",
                 action: onAI,
                 disabled: false,
               },
               {
-                title: "Update Profile",
-                text: "Change your details whenever your circumstances change.",
+                title: "{t("updateProfile")}",
+                text: "{t("updateDesc")}",
                 icon: "04",
                 action: onProfile,
                 disabled: false,
@@ -184,7 +184,7 @@ const DashboardPage = ({
                 <h3 className="mt-5 text-base font-extrabold text-[#102a43]">{item.title}</h3>
                 <p className="mt-2 text-xs leading-5 text-slate-500">{item.text}</p>
                 <p className="mt-4 text-xs font-bold text-[#073b6f] group-hover:text-[#0f8a5f]">
-                  Open →
+                  {t("open")}
                 </p>
               </button>
             ))}
@@ -195,7 +195,7 @@ const DashboardPage = ({
 
         <section className="mt-6 rounded-2xl border border-[#ead7a0] bg-[#fff8df] p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-[#6b5410]">
-            Important
+            {t("important")}
           </p>
           <p className="mt-1 text-xs leading-5 text-[#705f28]">
             Recommendations shown by GovAssist are potentially relevant matches
@@ -207,7 +207,7 @@ const DashboardPage = ({
 
       <footer className="bg-[#073b6f] px-5 py-6 text-center text-xs text-blue-100">
         <p className="font-bold text-white">GovAssist</p>
-        <p className="mt-1">Academic / student project • Not an official government website</p>
+        <p className="mt-1">{t("academicFooter")}</p>
       </footer>
     </div>
   )
@@ -229,7 +229,7 @@ const RecentlyViewed = ({
 }: {
   onViewScheme: (schemeSlug: string) => void
 }) => {
-  const [items, setItems] = useState<RecentScheme[]>([])
+  const [items, setItems] = use{t("state")}<RecentScheme[]>([])
 
   useEffect(() => {
     try {
@@ -244,13 +244,13 @@ const RecentlyViewed = ({
     return (
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f8a5f]">
-          Recent Activity
+          {t("recentActivity")}
         </p>
         <h2 className="mt-1 text-2xl font-extrabold text-[#102a43]">
-          Recently Viewed Schemes
+          {t("recentlyViewed")}
         </h2>
         <p className="mt-3 text-sm leading-6 text-slate-500">
-          Schemes you open will appear here so you can quickly return to them.
+          {t("recentDesc")}
         </p>
       </section>
     )
@@ -260,10 +260,10 @@ const RecentlyViewed = ({
     <section className="mt-8">
       <div className="mb-4">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f8a5f]">
-          Recent Activity
+          {t("recentActivity")}
         </p>
         <h2 className="mt-1 text-2xl font-extrabold text-[#102a43]">
-          Recently Viewed Schemes
+          {t("recentlyViewed")}
         </h2>
       </div>
 
@@ -288,7 +288,7 @@ const RecentlyViewed = ({
             </h3>
 
             <p className="mt-3 text-xs font-bold text-[#073b6f]">
-              View Details →
+              {t("viewDetails")}
             </p>
           </button>
         ))}
