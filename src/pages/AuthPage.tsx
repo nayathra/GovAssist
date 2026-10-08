@@ -139,14 +139,14 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
 
             <div className="mt-8">
               <p className="text-xs font-bold uppercase tracking-wider text-[#0f8a5f]">
-                {mode === "login" ? "Welcome back" : "{t("getStarted")}"}
+                {mode === "login" ? t("welcomeBack") : t("getStarted")}
               </p>
               <h2 className="mt-2 text-3xl font-extrabold text-[#073b6f]">
-                {mode === "login" ? "{t("signInGovAssist")}" : "{t("createYourAccount")}"}
+                {mode === "login" ? t("signInGovAssist") : t("createYourAccount")}
               </h2>
               <p className="mt-2 text-sm text-slate-500">
                 {mode === "login"
-                  ? "{t("continueExploring")}"
+                  ? t("continueExploring")
                   : "{t("accountContinue")}"}
               </p>
             </div>
@@ -162,7 +162,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
                     onChange={(event) => setName(event.target.value)}
                     required
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
-                    placeholder="{t("enterName")}"
+                    placeholder={t("enterName")}
                   />
                 </label>
               )}
@@ -192,7 +192,7 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
                   required
                   minLength={6}
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
-                  placeholder="{t("minPassword")}"
+                  placeholder={t("minPassword")}
                 />
               </label>
 
@@ -208,9 +208,9 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
                 className="w-full rounded-xl bg-[#073b6f] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#062f59] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading
-                  ? "{t("pleaseWait")}"
+                  ? t("pleaseWait")
                   : mode === "login"
-                    ? "{t("loginGovAssist")}"
+                    ? t("loginGovAssist")
                     : "Create Account"}
               </button>
             </form>
