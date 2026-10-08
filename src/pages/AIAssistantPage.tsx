@@ -3,10 +3,19 @@ import { LanguageSwitcher, useLanguage } from "../i18n"
 
 const API_BASE_URL = "http://127.0.0.1:8000"
 
+type Source = {
+  scheme_name: string
+  slug: string
+  snippet: string
+  level: string
+  schemeCategory: string
+}
+
 type Message = {
   id: number
   type: "ai" | "user"
   text: string
+  sources?: Source[]
 }
 
 const suggestedQuestions = [
@@ -16,7 +25,11 @@ const suggestedQuestions = [
   "What documents are usually mentioned in scheme information?",
 ]
 
-const AIAssistantPage = ({\n  onViewScheme,\n}: {\n  onViewScheme?: (schemeSlug: string) => void\n}) => {
+const AIAssistantPage = ({
+  onViewScheme,
+}: {
+  onViewScheme?: (schemeSlug: string) => void
+}) => {
   const { t } = useLanguage()
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
@@ -88,6 +101,7 @@ const AIAssistantPage = ({\n  onViewScheme,\n}: {\n  onViewScheme?: (schemeSlug:
         id: Date.now() + 1,
         type: "ai",
         text: data.answer,
+        sources: data.sources ?? [],
       }
 
       setMessages((previous) => [...previous, aiMessage])
