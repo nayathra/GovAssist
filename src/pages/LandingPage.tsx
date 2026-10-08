@@ -10,13 +10,13 @@ const parliamentUrl =
 
 const LandingPage = ({
   onGetStarted,
-  onExplore{t("schemes")},
+  onExploreSchemes,
   onAskAI,
   onLogin,
   user,
 }: {
   onGetStarted: () => void
-  onExplore{t("schemes")}: () => void
+  onExploreSchemes: () => void
   onAskAI: () => void
   onLogin: () => void
   user: { id: number; name: string; email: string } | null
@@ -140,7 +140,7 @@ const LandingPage = ({
   {t("getStarted")}
 </button>
               <button
-                onClick={onExplore{t("schemes")}}
+                onClick={onExploreSchemes}
                 className="rounded-lg border border-[#9fb5ca] bg-white/90 px-6 py-3.5 text-sm font-bold text-[#073b6f] backdrop-blur transition hover:bg-white"
               >
                 Explore {t("schemes")}
@@ -216,7 +216,7 @@ const LandingPage = ({
                         {t("potentiallyRelevant")}
                       </p>
                       <p className="mt-1 text-sm font-bold text-[#102a43]">
-                        {t("educationStudent{t("schemes")}")}
+                        {t("educationStudentSchemes")}
                       </p>
                       <p className="mt-2 text-xs leading-5 text-slate-500">{t("recommendationBasis")}</p>
                     </div>
