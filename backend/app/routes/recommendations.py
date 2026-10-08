@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from typing import Optional
 
 from fastapi import APIRouter
@@ -31,22 +32,70 @@ class ProfileRequest(BaseModel):
 
 
 def _text(row) -> str:
-    fields = [
-        "scheme_name",
-        "details",
-        "benefits",
-        "eligibility",
-        "application",
-        "documents",
-        "tags",
-        "schemeCategory",
-        "level",
-    ]
-    return " ".join(str(row.get(field, "")) for field in fields).lower()
+    return row.get("__text") or ""
 
 
 def _eligibility_text(row) -> str:
-    return str(row.get("eligibility", "")).lower()
+    return row.get("__eligibility") or ""
+
+
+@lru_cache(maxsize=1)
+def _scheme_records() -> tuple[dict, ...]:
+    """Prepare the scheme index once for fast recommendation requests."""
+    df = load_schemes()
+    fields = [
+        "scheme_name", "details", "benefits", "eligibility",
+        "application", "documents", "tags", "schemeCategory", "level",
+    ]
+    indian_states = (
+        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+        "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
+        "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
+        "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+        "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    )
+    records = []
+    for row in df.to_dict("records"):
+        record = dict(row)
+        record["__text"] = " ".join(
+            str(record.get(field, "")) for field in fields
+        ).lower()
+        record["__eligibility"] = str(record.get("eligibility", "")).lower()
+
+        restricted_states = []
+        eligibility = record["__eligibility"]
+        context = " ".join(
+            str(record.get(field, ""))
+            for field in ("scheme_name", "details", "benefits")
+        ).lower()
+
+        for state_name in indian_states:
+            state_lower = state_name.lower()
+            direct_patterns = (
+                rf"resid(?:ing|ence)\s+(?:in|of)\s+{re.escape(state_lower)}",
+                rf"domicile\s+(?:of|in)\s+{re.escape(state_lower)}",
+                rf"native\s+(?:of|to)\s+{re.escape(state_lower)}",
+                rf"state\s+of\s+{re.escape(state_lower)}",
+                rf"from\s+the\s+state\s+of\s+{re.escape(state_lower)}",
+            )
+            state_patterns = (
+                rf"government\s+of\s+{re.escape(state_lower)}",
+                rf"govt\.?\s+of\s+{re.escape(state_lower)}",
+                rf"department[^.]{0,100}\b{re.escape(state_lower)}\b",
+                rf"government\s+of\s+{re.escape(state_lower.split()[0])}\b",
+            )
+            if any(re.search(pattern, eligibility) for pattern in direct_patterns):
+                restricted_states.append(state_name)
+            if str(record.get("level", "")).strip().lower() == "state" and any(
+                re.search(pattern, context) for pattern in state_patterns
+            ):
+                restricted_states.append(state_name)
+
+        record["__restricted_states"] = tuple(dict.fromkeys(restricted_states))
+        records.append(record)
+
+    return tuple(records)
 
 
 def _has(text: str, *values: str) -> bool:
@@ -114,51 +163,11 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
 
     # Explicit state/residence restrictions.
     if profile.state and profile.state != "Other / All India":
-        indian_states = (
-            "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
-            "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
-            "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
-            "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-            "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
-            "Uttar Pradesh", "Uttarakhand", "West Bengal",
-        )
         normalized_profile_state = profile.state.lower().strip()
-        restricted_states: list[str] = []
-
-        for state_name in indian_states:
-            state_lower = state_name.lower()
-            if state_lower == normalized_profile_state:
-                continue
-
-            direct_patterns = (
-                rf"resid(?:ing|ence)\s+(?:in|of)\s+{re.escape(state_lower)}",
-                rf"domicile\s+(?:of|in)\s+{re.escape(state_lower)}",
-                rf"native\s+(?:of|to)\s+{re.escape(state_lower)}",
-                rf"state\s+of\s+{re.escape(state_lower)}",
-                rf"from\s+the\s+state\s+of\s+{re.escape(state_lower)}",
-            )
-            if any(re.search(pattern, eligibility, re.IGNORECASE) for pattern in direct_patterns):
-                restricted_states.append(state_name)
-
-        if str(row.get("level", "")).strip().lower() == "state":
-            scheme_context = " ".join(
-                str(row.get(field, "")) for field in ("scheme_name", "details", "benefits")
-            ).lower()
-
-            for state_name in indian_states:
-                state_lower = state_name.lower()
-                if state_lower == normalized_profile_state:
-                    continue
-
-                state_patterns = (
-                    rf"government\s+of\s+{re.escape(state_lower)}",
-                    rf"govt\.?\s+of\s+{re.escape(state_lower)}",
-                    rf"department[^.]{0,100}\b{re.escape(state_lower)}\b",
-                    rf"government\s+of\s+{re.escape(state_lower.split()[0])}\b",
-                )
-                if any(re.search(pattern, scheme_context, re.IGNORECASE) for pattern in state_patterns):
-                    restricted_states.append(state_name)
-
+        restricted_states = [
+            state for state in row.get("__restricted_states", ())
+            if state.lower() != normalized_profile_state
+        ]
         if restricted_states:
             conflicts.append(
                 f"The scheme appears restricted to {restricted_states[0]}, not {profile.state}."
@@ -380,10 +389,9 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
 
 @router.post("")
 def get_recommendations(profile: ProfileRequest):
-    df = load_schemes()
     recommendations = []
 
-    for _, row in df.iterrows():
+    for row in _scheme_records():
         result = _score_profile(row, profile)
         if not result:
             continue
