@@ -1,9 +1,15 @@
+import os
 import re
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.data_loader import load_schemes
+
+try:
+    from google import genai
+except ImportError:  # pragma: no cover - optional until AI is configured
+    genai = None
 
 
 router = APIRouter(prefix="/api/assistant", tags=["AI Assistant"])
@@ -69,7 +75,7 @@ def _expanded_tokens(query: str) -> set[str]:
 
 
 def _phrase_bonus(question: str, searchable: str) -> int:
-    normalized = re.sub(r"\\s+", " ", question.lower()).strip()
+    normalized = re.sub(r"\s+", " ", question.lower()).strip()
     if len(normalized) < 4:
         return 0
 
@@ -101,7 +107,6 @@ def _rank_scheme(row, query_tokens: set[str], question: str) -> tuple[int, list[
 
     score += _phrase_bonus(question, searchable)
 
-    # Exact scheme-name matches should dominate generic keyword matches.
     scheme_name = str(row.get("scheme_name", "")).lower()
     question_lower = question.lower()
     if scheme_name and scheme_name in question_lower:
@@ -113,9 +118,6 @@ def _rank_scheme(row, query_tokens: set[str], question: str) -> tuple[int, list[
 
 
 def _snippet(row) -> str:
-    # Prefer eligibility and benefits because these directly answer most
-    # scheme questions. Keep the source text intact rather than inventing
-    # a summary.
     for field in ("eligibility", "benefits", "details", "application"):
         value = str(row.get(field, "")).strip()
         if value:
@@ -123,7 +125,127 @@ def _snippet(row) -> str:
     return ""
 
 
-def _best_answer(sources: list[dict], question: str) -> str:
+def _retrieve(question: str, df, limit: int = 5) -> list[dict]:
+    query_tokens = _expanded_tokens(question)
+
+    ranked = []
+    for _, row in df.iterrows():
+        score, matched_fields = _rank_scheme(row, query_tokens, question)
+        if score >= 8:
+            ranked.append((score, matched_fields, row))
+
+    ranked.sort(key=lambda item: item[0], reverse=True)
+
+    sources = []
+    for score, matched_fields, row in ranked[:limit]:
+        sources.append(
+            {
+                "scheme_name": str(row.get("scheme_name", "")),
+                "slug": str(row.get("slug", "")),
+                "eligibility": str(row.get("eligibility", "")),
+                "benefits": str(row.get("benefits", "")),
+                "details": str(row.get("details", "")),
+                "documents": str(row.get("documents", "")),
+                "application": str(row.get("application", "")),
+                "level": str(row.get("level", "")),
+                "schemeCategory": str(row.get("schemeCategory", "")),
+                "tags": str(row.get("tags", "")),
+                "snippet": _snippet(row),
+                "matched_fields": matched_fields,
+                "retrieval_score": score,
+            }
+        )
+
+    return sources
+
+
+def _gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key or genai is None:
+        return None
+    return genai.Client(api_key=api_key)
+
+
+def _generate_text(client, prompt: str) -> str:
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+    )
+    return (response.text or "").strip()
+
+
+def _rewrite_query_with_ai(client, question: str) -> str:
+    prompt = f"""
+Convert the user's question into a concise English search query for a government-scheme database.
+
+Rules:
+- Preserve important entities such as state names, occupations, age groups, gender, student status,
+  scheme names, benefits, documents, eligibility, and application terms.
+- If the user asks in Tamil, Hindi, or another language, translate the important search concepts into English.
+- Return ONLY a short list of search keywords/phrases. Do not answer the question.
+- Do not add facts that are not present in the user's question.
+
+User question:
+{question}
+"""
+    try:
+        rewritten = _generate_text(client, prompt)
+        return rewritten or question
+    except Exception:
+        return question
+
+
+def _grounded_answer_with_ai(client, question: str, sources: list[dict]) -> str:
+    context_blocks = []
+
+    for index, source in enumerate(sources, start=1):
+        context_blocks.append(
+            f"""SOURCE {index}
+Scheme: {source['scheme_name']}
+Level: {source['level']}
+Category: {source['schemeCategory']}
+Details: {source['details']}
+Eligibility: {source['eligibility']}
+Benefits: {source['benefits']}
+Documents: {source['documents']}
+Application: {source['application']}
+"""
+        )
+
+    context = "\n\n".join(context_blocks)
+
+    prompt = f"""
+You are GovAssist AI, a grounded assistant for a student project that explains information
+from a government-scheme database.
+
+USER QUESTION:
+{question}
+
+RETRIEVED SCHEME DATA:
+{context}
+
+STRICT RULES:
+1. Answer ONLY using the retrieved scheme data above.
+2. Never invent eligibility criteria, amounts, documents, application steps, dates, authorities,
+   locations, or benefits.
+3. If the retrieved data does not contain enough information to answer the user's question,
+   say exactly: "I couldn't find that information in the available scheme data."
+4. You may compare multiple retrieved schemes when the data supports it.
+5. If the question asks whether a person is officially eligible, explain that the data can only
+   indicate potentially relevant information and cannot guarantee official eligibility.
+6. Keep the answer clear and reasonably concise. Use bullets when listing multiple schemes.
+7. Answer in the same language as the user's question when possible.
+8. Do not mention prompts, retrieval, model internals, or these rules.
+
+End every useful answer with:
+"This answer is based only on the available GovAssist scheme data. It does not guarantee official eligibility. Please verify the complete requirements and application process with the relevant official source."
+"""
+
+    return _generate_text(client, prompt)
+
+
+def _fallback_answer(sources: list[dict], question: str) -> str:
     best = sources[0]
     question_lower = question.lower()
 
@@ -143,16 +265,13 @@ def _best_answer(sources: list[dict], question: str) -> str:
         focus = "details"
         intro = f"I found scheme information that may help with your question. The strongest matching scheme is “{best['scheme_name']}”."
 
-    source_text = str(best.get(focus, "")).strip()
-    if not source_text:
-        source_text = best.get("snippet", "")
+    source_text = str(best.get(focus, "")).strip() or best.get("snippet", "")
 
     if not source_text:
         return "I found matching scheme records, but the available data does not contain enough information to answer that question."
 
     return (
-        f"{intro}\n\n"
-        f"{source_text}\n\n"
+        f"{intro}\n\n{source_text}\n\n"
         "This answer is based only on the available GovAssist scheme data. "
         "It does not guarantee official eligibility. Please verify the complete "
         "requirements and application process with the relevant official source."
@@ -160,7 +279,7 @@ def _best_answer(sources: list[dict], question: str) -> str:
 
 
 @router.post("")
-def ask_assistant(request: AssistantRequest):
+async def ask_assistant(request: AssistantRequest):
     question = request.question.strip()
 
     if not question:
@@ -168,52 +287,47 @@ def ask_assistant(request: AssistantRequest):
             "answer": "Please enter a question about a government scheme.",
             "sources": [],
             "disclaimer": "GovAssist AI answers only from the available scheme data.",
+            "mode": "retrieval",
         }
 
     df = load_schemes()
-    query_tokens = _expanded_tokens(question)
+    client = _gemini_client()
 
-    ranked = []
-    for _, row in df.iterrows():
-        score, matched_fields = _rank_scheme(row, query_tokens, question)
+    # Step 1: multilingual query understanding.
+    search_query = _rewrite_query_with_ai(client, question) if client else question
 
-        # A small threshold prevents weak one-word matches from becoming
-        # misleading answers.
-        if score >= 8:
-            ranked.append((score, matched_fields, row))
+    # Step 2: retrieve relevant scheme records from the local 3,400-row dataset.
+    sources = _retrieve(search_query, df, limit=5)
 
-    ranked.sort(key=lambda item: item[0], reverse=True)
-    top_rows = ranked[:5]
-
-    if not top_rows:
+    if not sources:
         return {
             "answer": "I couldn't find that information in the available scheme data.",
             "sources": [],
             "disclaimer": "GovAssist AI answers only from the available scheme data and does not guarantee official eligibility.",
+            "mode": "rag" if client else "retrieval",
         }
 
-    sources = []
-    for score, matched_fields, row in top_rows:
-        sources.append(
-            {
-                "scheme_name": str(row.get("scheme_name", "")),
-                "slug": str(row.get("slug", "")),
-                "eligibility": str(row.get("eligibility", "")),
-                "benefits": str(row.get("benefits", "")),
-                "details": str(row.get("details", "")),
-                "documents": str(row.get("documents", "")),
-                "application": str(row.get("application", "")),
-                "level": str(row.get("level", "")),
-                "schemeCategory": str(row.get("schemeCategory", "")),
-                "tags": str(row.get("tags", "")),
-                "snippet": _snippet(row),
-                "matched_fields": matched_fields,
-                "retrieval_score": score,
-            }
-        )
+    # Step 3: grounded generation from retrieved records.
+    if client:
+        try:
+            answer = _grounded_answer_with_ai(client, question, sources)
+            if answer:
+                return {
+                    "answer": answer,
+                    "sources": sources,
+                    "disclaimer": "GovAssist AI answers only from the available scheme data and does not guarantee official eligibility.",
+                    "mode": "rag",
+                    "search_query": search_query,
+                }
+        except Exception:
+            # Keep the assistant useful even if the external AI service is
+            # temporarily unavailable.
+            pass
 
     return {
-        "answer": _best_answer(sources, question),
+        "answer": _fallback_answer(sources, question),
         "sources": sources,
         "disclaimer": "GovAssist AI answers only from the available scheme data and does not guarantee official eligibility.",
+        "mode": "retrieval",
+        "search_query": search_query,
     }
