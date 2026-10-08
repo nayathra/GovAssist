@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 
 type Scheme = {
   scheme_name: string
@@ -20,6 +21,7 @@ const SchemesPage = ({
 }: {
   onViewDetails: (schemeSlug: string) => void
 }) => {
+  const { t } = useLanguage()
   const [schemes, setSchemes] = useState<Scheme[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [search, setSearch] = useState("")
@@ -138,7 +140,8 @@ const SchemesPage = ({
           >
             ← Back
           </button>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       {/* Page intro */}
