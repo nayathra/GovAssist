@@ -224,7 +224,7 @@ const SchemesPage = ({
               {schemes.map((scheme) => (
                 <article
                   key={scheme.slug}
-                  className="group flex min-h-[255px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-[#b8cce1] hover:shadow-md"
+                  className="group flex min-h-[330px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-[#b8cce1] hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="max-w-[78%] rounded-full bg-[#eaf7f2] px-3 py-1 text-xs font-semibold leading-4 text-[#07845b]">
@@ -239,6 +239,11 @@ const SchemesPage = ({
                   <h3 className="mt-5 text-lg font-bold leading-7 text-[#073b6f]">
                     {scheme.scheme_name}
                   </h3>
+
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
+                    {scheme.details ||
+                      "Scheme information is available on the details page."}
+                  </p>
 
                   <div className="flex-1" />
 
