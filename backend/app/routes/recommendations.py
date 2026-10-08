@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from fastapi import APIRouter
@@ -30,12 +31,30 @@ class ProfileRequest(BaseModel):
 
 
 def _text(row) -> str:
-    fields = ["scheme_name", "details", "benefits", "eligibility", "application", "documents", "tags", "schemeCategory", "level"]
+    fields = [
+        "scheme_name",
+        "details",
+        "benefits",
+        "eligibility",
+        "application",
+        "documents",
+        "tags",
+        "schemeCategory",
+        "level",
+    ]
     return " ".join(str(row.get(field, "")) for field in fields).lower()
+
+
+def _eligibility_text(row) -> str:
+    return str(row.get("eligibility", "")).lower()
 
 
 def _has(text: str, *values: str) -> bool:
     return any(value.lower() in text for value in values if value)
+
+
+def _has_word(text: str, *values: str) -> bool:
+    return any(re.search(rf"\b{re.escape(value.lower())}\b", text) for value in values if value)
 
 
 def _add_match(matches: list[str], label: str) -> None:
@@ -43,10 +62,130 @@ def _add_match(matches: list[str], label: str) -> None:
         matches.append(label)
 
 
-def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str]]]:
+def _parse_money(value: str) -> Optional[float]:
+    value = value.lower().replace(",", "").replace("₹", "").strip()
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(lakh|lakhs|crore|crores)?", value)
+    if not match:
+        return None
+
+    amount = float(match.group(1))
+    unit = match.group(2) or ""
+    if unit.startswith("lakh"):
+        return amount * 100_000
+    if unit.startswith("crore"):
+        return amount * 10_000_000
+    return amount
+
+
+def _profile_income_bounds(income: str) -> Optional[tuple[float, float]]:
+    ranges = {
+        "Below ₹1 Lakh": (0, 100_000),
+        "₹1 Lakh – ₹2.5 Lakh": (100_000, 250_000),
+        "₹2.5 Lakh – ₹5 Lakh": (250_000, 500_000),
+        "₹5 Lakh – ₹10 Lakh": (500_000, 1_000_000),
+        "Above ₹10 Lakh": (1_000_000, float("inf")),
+    }
+    return ranges.get(income)
+
+
+def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], list[str]]:
+    """
+    Return hard conflicts that make a scheme unsuitable for the supplied
+    profile, plus softer warnings where the available profile data is not
+    enough to confirm a requirement.
+
+    This deliberately avoids treating a broad profile range as proof of an
+    exact threshold. Unknown conditions remain unknown.
+    """
+    eligibility = _eligibility_text(row)
+    conflicts: list[str] = []
+    warnings: list[str] = []
+
+    # Explicit gender restrictions.
+    if profile.gender == "Female" and (
+        _has_word(eligibility, "male only")
+        or _has(eligibility, "only for men", "only for males", "for men only", "for males only")
+    ):
+        conflicts.append("Eligibility appears restricted to males/men.")
+    if profile.gender == "Male" and (
+        _has_word(eligibility, "female only")
+        or _has(eligibility, "only for women", "only for females", "for women only", "for females only")
+    ):
+        conflicts.append("Eligibility appears restricted to females/women.")
+
+    # Explicit age thresholds. These are treated as hard conflicts only when
+    # the profile age is definitely outside the stated limit.
+    if profile.age:
+        try:
+            age = int(profile.age)
+        except ValueError:
+            age = -1
+
+        if age >= 0:
+            max_age_patterns = [
+                r"(?:below|under|less than|up to|not more than|maximum(?: age)? of)\s*(\d{1,3})\s*(?:years?|yrs?)?",
+                r"age\s*(?:should be|must be|is)?\s*(?:below|under|up to)\s*(\d{1,3})",
+            ]
+            for pattern in max_age_patterns:
+                for match in re.finditer(pattern, eligibility):
+                    maximum = int(match.group(1))
+                    if age > maximum:
+                        conflicts.append(f"Profile age {age} is above the stated maximum age of {maximum}.")
+                        break
+
+            min_age_patterns = [
+                r"(?:above|over|at least|minimum(?: age)? of)\s*(\d{1,3})\s*(?:years?|yrs?)?",
+                r"age\s*(?:should be|must be|is)?\s*(?:above|over)\s*(\d{1,3})",
+            ]
+            for pattern in min_age_patterns:
+                for match in re.finditer(pattern, eligibility):
+                    minimum = int(match.group(1))
+                    if age < minimum:
+                        conflicts.append(f"Profile age {age} is below the stated minimum age of {minimum}.")
+                        break
+
+            # "Girl child"/"boy child" can have scheme-specific definitions.
+            # Keep this as a warning rather than inventing an age definition.
+            if age >= 18 and _has(eligibility, "girl child", "boy child", "child beneficiary"):
+                warnings.append("The eligibility mentions a child-related condition; the available profile does not establish the scheme's exact definition of 'child'.")
+
+    # Income thresholds. A broad profile range cannot prove an exact upper
+    # threshold, but it can rule a scheme out when the whole range is above it.
+    bounds = _profile_income_bounds(profile.income)
+    if bounds:
+        _, profile_max = bounds
+
+        upper_patterns = [
+            r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
+            r"(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?\s*(?:or less|and below|per annum or less)",
+        ]
+        for pattern in upper_patterns:
+            for match in re.finditer(pattern, eligibility):
+                amount = _parse_money(f"{match.group(1)} {match.group(2) or ''}")
+                if amount is not None and bounds[0] > amount:
+                    conflicts.append(
+                        f"The selected income range is entirely above the stated income limit of ₹{amount:,.0f}."
+                    )
+                    break
+
+        if _has(eligibility, "income certificate", "annual income") and profile.income == "Below ₹1 Lakh":
+            warnings.append("The profile gives an income range; exact income thresholds in the scheme data may still need verification.")
+
+    return list(dict.fromkeys(conflicts)), list(dict.fromkeys(warnings))
+
+
+def _score_profile(
+    row, profile: ProfileRequest
+) -> Optional[tuple[int, list[str], list[str]]]:
     text = _text(row)
     score = 0
     matches: list[str] = []
+
+    conflicts, warnings = _eligibility_conflicts(row, profile)
+
+    # A definite contradiction should keep the scheme out of the top results.
+    if conflicts:
+        return None
 
     if profile.state and profile.state != "Other / All India" and _has(text, profile.state):
         score += 25
@@ -81,34 +220,52 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         score += 20
         _add_match(matches, "Student status")
 
-    if profile.education and _has(text, profile.education):
+    if profile.education and profile.education != "Prefer not to say" and _has_word(
+        text, profile.education
+    ):
         score += 10
         _add_match(matches, "Education")
 
-    if profile.gender and profile.gender not in {"Prefer not to say", "Transgender"} and _has(text, profile.gender):
+    if profile.gender and profile.gender not in {"Prefer not to say", "Transgender"} and _has_word(text, profile.gender):
         score += 10
         _add_match(matches, "Gender")
 
-    if profile.socialCategory and profile.socialCategory not in {"Prefer not to say", "General"} and _has(text, profile.socialCategory):
+    if profile.socialCategory and profile.socialCategory not in {"Prefer not to say", "General"} and _has_word(
+        text, profile.socialCategory
+    ):
         score += 10
         _add_match(matches, "Social category")
 
-    if profile.disabilityStatus == "Yes" and _has(text, "disability", "disabled", "divyang", "persons with disabilities"):
+    if profile.disabilityStatus == "Yes" and _has(
+        text, "disability", "disabled", "divyang", "persons with disabilities"
+    ):
         score += 12
         _add_match(matches, "Disability status")
 
-    if profile.residence and profile.residence != "Prefer not to say" and _has(text, profile.residence):
+    if profile.residence and profile.residence != "Prefer not to say" and _has_word(text, profile.residence):
         score += 8
         _add_match(matches, "Residence")
 
-    if profile.maritalStatus and profile.maritalStatus != "Prefer not to say" and _has(text, profile.maritalStatus, profile.maritalStatus.split(" / ")[0]):
-        score += 8
-        _add_match(matches, "Marital status")
+    if profile.maritalStatus and profile.maritalStatus != "Prefer not to say":
+        marital_terms = tuple(part.strip() for part in profile.maritalStatus.split(" / ") if part.strip())
+        if _has_word(text, *marital_terms):
+            score += 8
+            _add_match(matches, "Marital status")
+
+    if profile.employmentStatus and profile.employmentStatus not in {"Other", ""}:
+        if _has_word(text, profile.employmentStatus):
+            score += 8
+            _add_match(matches, "Employment status")
 
     if profile.age:
         try:
             age = int(profile.age)
-            if (age < 18 and _has(text, "below 18", "minor")) or (18 <= age <= 25 and _has(text, "18", "21", "22", "23", "24", "25", "youth")) or (26 <= age <= 40 and _has(text, "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40")) or (age >= 60 and _has(text, "60", "senior citizen", "elderly", "old age")):
+            if (
+                (age < 18 and _has(text, "below 18", "minor"))
+                or (18 <= age <= 25 and _has(text, "youth", "young"))
+                or (26 <= age <= 40 and _has(text, "young adult", "working age"))
+                or (age >= 60 and _has(text, "60", "senior citizen", "elderly", "old age"))
+            ):
                 score += 10
                 _add_match(matches, "Age")
         except ValueError:
@@ -134,11 +291,11 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         score += 12
         _add_match(matches, "Business status")
 
-    if profile.businessType and _has(text, profile.businessType):
+    if profile.businessType and _has_word(text, profile.businessType):
         score += 8
         _add_match(matches, "Business type")
 
-    return (score, matches) if score > 0 else None
+    return (score, matches, warnings) if score > 0 else None
 
 
 @router.post("")
@@ -151,21 +308,27 @@ def get_recommendations(profile: ProfileRequest):
         if not result:
             continue
 
-        score, matches = result
-        recommendations.append({
-            "scheme_name": str(row.get("scheme_name", "")),
-            "slug": str(row.get("slug", "")),
-            "details": str(row.get("details", "")),
-            "benefits": str(row.get("benefits", "")),
-            "eligibility": str(row.get("eligibility", "")),
-            "level": str(row.get("level", "")),
-            "schemeCategory": str(row.get("schemeCategory", "")),
-            "tags": str(row.get("tags", "")),
-            "relevance_score": score,
-            "matched_profile_signals": matches,
-        })
+        score, matches, warnings = result
+        recommendations.append(
+            {
+                "scheme_name": str(row.get("scheme_name", "")),
+                "slug": str(row.get("slug", "")),
+                "details": str(row.get("details", "")),
+                "benefits": str(row.get("benefits", "")),
+                "eligibility": str(row.get("eligibility", "")),
+                "level": str(row.get("level", "")),
+                "schemeCategory": str(row.get("schemeCategory", "")),
+                "tags": str(row.get("tags", "")),
+                "relevance_score": score,
+                "matched_profile_signals": matches,
+                "eligibility_warnings": warnings,
+            }
+        )
 
-    recommendations.sort(key=lambda item: item["relevance_score"], reverse=True)
+    recommendations.sort(
+        key=lambda item: (item["relevance_score"], -len(item["eligibility_warnings"])),
+        reverse=True,
+    )
 
     return {
         "profile": profile.model_dump(),
