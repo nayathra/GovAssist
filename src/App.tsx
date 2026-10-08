@@ -6,15 +6,19 @@ import SchemeDetailsPage from "./pages/SchemeDetailsPage"
 import AIAssistantPage from "./pages/AIAssistantPage"
 import RecommendationsPage from "./pages/RecommendationsPage"
 import AuthPage from "./pages/AuthPage"
+import DashboardPage from "./pages/DashboardPage"
 import type { Profile } from "./pages/ProfilePage"
 
 function App() {
   const [page, setPage] = useState<
-    "landing" | "auth" | "profile" | "recommendations" | "schemes" | "details" | "ai"
+    "landing" | "auth" | "dashboard" | "profile" | "recommendations" | "schemes" | "details" | "ai"
   >("landing")
 
   const [selectedScheme, setSelectedScheme] = useState("")
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const savedProfile = localStorage.getItem("govassist_profile")
+    return savedProfile ? JSON.parse(savedProfile) : null
+  })
   const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(() => {
     const savedUser = localStorage.getItem("govassist_user")
     return savedUser ? JSON.parse(savedUser) : null
@@ -25,9 +29,28 @@ function App() {
       <AuthPage
         onSuccess={(authenticatedUser) => {
           setUser(authenticatedUser)
-          setPage("profile")
+          setPage("dashboard")
         }}
         onBack={() => setPage("landing")}
+      />
+    )
+  }
+
+  if (page === "dashboard" && user) {
+    return (
+      <DashboardPage
+        user={user}
+        profile={profile}
+        onProfile={() => setPage("profile")}
+        onRecommendations={() => setPage("recommendations")}
+        onSchemes={() => setPage("schemes")}
+        onAI={() => setPage("ai")}
+        onHome={() => setPage("landing")}
+        onLogout={() => {
+          localStorage.removeItem("govassist_user")
+          setUser(null)
+          setPage("landing")
+        }}
       />
     )
   }
@@ -78,7 +101,7 @@ function App() {
   return (
     <LandingPage
       user={user}
-      onLogin={() => setPage("auth")}
+      onLogin={() => setPage(user ? "dashboard" : "auth")}
       onGetStarted={() => setPage("profile")}
       onExploreSchemes={() => setPage("schemes")}
       onAskAI={() => setPage("ai")}
