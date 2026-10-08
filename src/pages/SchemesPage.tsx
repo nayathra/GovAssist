@@ -112,7 +112,7 @@ const SchemesPage = ({
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
       {/* Top utility bar */}
       <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
-        Government Scheme Recommendation & AI Assistant
+        {t("brandTagline")}
       </div>
 
       {/* Header */}
@@ -129,7 +129,7 @@ const SchemesPage = ({
               </h1>
 
               <p className="text-xs text-slate-500">
-                Government Scheme Recommendation & AI Assistant
+                {t("brandTagline")}
               </p>
             </div>
           </div>
@@ -149,11 +149,11 @@ const SchemesPage = ({
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="max-w-3xl">
             <p className="mb-3 text-sm font-bold uppercase tracking-wider text-[#07845b]">
-              Explore Schemes
+              {t("exploreSchemes")}
             </p>
 
             <h2 className="text-3xl font-extrabold tracking-tight text-[#073b6f] md:text-4xl">
-              Explore Government Schemes
+              {t("exploreSchemesTitle")}
             </h2>
 
             <p className="mt-4 text-base leading-7 text-slate-600">
@@ -176,7 +176,7 @@ const SchemesPage = ({
 
               <input
                 type="text"
-                placeholder="Search schemes..."
+                placeholder="{t("search")}"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
@@ -189,7 +189,7 @@ const SchemesPage = ({
               onChange={(e) => setCategory(e.target.value)}
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#073b6f]"
             >
-              <option>All Categories</option>
+              <option>{t("allCategories")}</option>
 
               {categories.map((item) => (
                 <option key={item} value={item}>
@@ -204,7 +204,7 @@ const SchemesPage = ({
               onChange={(e) => setLevel(e.target.value)}
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#073b6f]"
             >
-              <option>All Levels</option>
+              <option>{t("allLevels")}</option>
               <option>Central</option>
               <option>State</option>
             </select>
@@ -219,11 +219,11 @@ const SchemesPage = ({
             <div className="text-4xl">⏳</div>
 
             <h3 className="mt-4 text-lg font-bold text-[#073b6f]">
-              Loading schemes...
+              {t("loadingSchemes")}
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">
-              Fetching scheme information from the GovAssist database.
+              {t("fetchingSchemes")}
             </p>
           </div>
         ) : schemes.length > 0 ? (
@@ -264,11 +264,11 @@ const SchemesPage = ({
 
                   <div className="mt-5 rounded-xl bg-slate-50 p-4">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Benefits Preview
+                      {t("benefitsPreview")}
                     </p>
 
                     <p className="mt-1 text-sm font-medium text-slate-700">
-                      {scheme.benefits || "Benefits information available in details."}
+                      {scheme.benefits || "{t("benefitsAvailable")}"}
                     </p>
                   </div>
 
@@ -293,7 +293,7 @@ const SchemesPage = ({
                     onClick={() => onViewDetails(scheme.slug)}
                     className="mt-6 flex items-center justify-center rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
                   >
-                    View Details →
+                    {t("viewDetails")}
                   </button>
                 </article>
               ))}
@@ -307,7 +307,7 @@ const SchemesPage = ({
                   disabled={page === 1}
                   className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ← Previous
+                  {t("previous")}
                 </button>
 
                 <span className="rounded-xl bg-[#073b6f] px-4 py-2 text-sm font-bold text-white">
@@ -321,7 +321,7 @@ const SchemesPage = ({
                   disabled={page === totalPages}
                   className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Next →
+                  {t("next")}
                 </button>
               </div>
             )}
@@ -331,11 +331,11 @@ const SchemesPage = ({
             <div className="text-4xl">🔎</div>
 
             <h3 className="mt-4 text-lg font-bold text-[#073b6f]">
-              No matching schemes found
+              {t("noMatching")}
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">
-              Try changing your search or filters.
+              {t("tryFilters")}
             </p>
           </div>
         )}
@@ -361,12 +361,12 @@ const SchemesPage = ({
             <p className="font-bold">GovAssist</p>
 
             <p className="mt-1 text-xs text-white/70">
-              Government Scheme Recommendation & AI Assistant
+              {t("brandTagline")}
             </p>
           </div>
 
           <p className="text-xs text-white/70">
-            Student project • Not an official government website
+            {t("academicFooter")}
           </p>
         </div>
       </footer>
