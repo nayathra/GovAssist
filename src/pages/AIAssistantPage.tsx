@@ -254,7 +254,7 @@ const AIAssistantPage = ({
 
               <button
                 onClick={() => handleSend()}
-                className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59)"
+                className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59]"
               >
                 {t("send")}
               </button>
