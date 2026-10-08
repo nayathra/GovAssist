@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 
-from app.data_loader import load_schemes
+from app.database import ping_database
 from app.routes.schemes import router as schemes_router
 from app.routes.recommendations import router as recommendations_router
 from app.routes.assistant import router as assistant_router
 from app.routes.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(
     title="GovAssist API",
@@ -40,3 +41,19 @@ def health():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/health/database")
+def database_health():
+    try:
+        ping_database()
+        return {
+            "status": "healthy",
+            "database": "mongodb",
+        }
+    except Exception as exc:
+        return {
+            "status": "unavailable",
+            "database": "mongodb",
+            "detail": str(exc),
+        }
