@@ -52,6 +52,28 @@ const SchemeDetailsPage = ({
         const data = await response.json()
 
         setScheme(data.scheme)
+
+        const viewedScheme = {
+          scheme_name: data.scheme.scheme_name,
+          slug: data.scheme.slug,
+          level: data.scheme.level,
+          schemeCategory: data.scheme.schemeCategory,
+          viewedAt: new Date().toISOString(),
+        }
+
+        const existing = JSON.parse(
+          localStorage.getItem("govassist_recent_schemes") || "[]",
+        ) as typeof viewedScheme[]
+
+        const updated = [
+          viewedScheme,
+          ...existing.filter((item) => item.slug !== viewedScheme.slug),
+        ].slice(0, 5)
+
+        localStorage.setItem(
+          "govassist_recent_schemes",
+          JSON.stringify(updated),
+        )
       } catch (err) {
         console.error("Failed to load scheme:", err)
         setScheme(null)
