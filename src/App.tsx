@@ -8,6 +8,7 @@ import RecommendationsPage from "./pages/RecommendationsPage"
 import AuthPage from "./pages/AuthPage"
 import DashboardPage from "./pages/DashboardPage"
 import type { Profile } from "./pages/ProfilePage"
+import { LanguageProvider } from "./i18n"
 
 function AppContent() {
   const [page, setPage] = useState<
@@ -110,6 +111,14 @@ function AppContent() {
       onExploreSchemes={() => setPage("schemes")}
       onAskAI={() => setPage("ai")}
     />
+  )
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   )
 }
 
