@@ -32,7 +32,10 @@ def main() -> None:
 
     result = collection.insert_many(records)
 
-    collection.create_index("slug", unique=True, sparse=True)
+    # Slugs in the source dataset are not guaranteed to be unique.
+    # Keep a normal index so search/detail lookups remain fast without
+    # rejecting legitimate duplicate source records.
+    collection.create_index("slug")
     collection.create_index("schemeCategory")
     collection.create_index("level")
 
