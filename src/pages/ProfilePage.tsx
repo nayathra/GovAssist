@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 
 export type Profile = {
   name: string
@@ -124,6 +125,7 @@ const ProfilePage = ({
 }: {
   onFindSchemes: (profile: Profile) => void
 }) => {
+  const { t } = useLanguage()
   const [profile, setProfile] = useState<Profile>(initialProfile)
 
   const update = (field: keyof Profile, value: string) => {
@@ -166,7 +168,8 @@ const ProfilePage = ({
           >
             ← Back
           </button>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       <main className="mx-auto max-w-[1050px] px-5 py-10 sm:px-8 sm:py-14">
