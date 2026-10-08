@@ -45,6 +45,10 @@ function App() {
         onRecommendations={() => setPage("recommendations")}
         onSchemes={() => setPage("schemes")}
         onAI={() => setPage("ai")}
+        onViewScheme={(schemeSlug) => {
+          setSelectedScheme(schemeSlug)
+          setPage("details")
+        }}
         onHome={() => setPage("landing")}
         onLogout={() => {
           localStorage.removeItem("govassist_user")
