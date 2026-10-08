@@ -229,7 +229,7 @@ const RecentlyViewed = ({
 }: {
   onViewScheme: (schemeSlug: string) => void
 }) => {
-  const [items, setItems] = use{t("state")}<RecentScheme[]>([])
+  const [items, setItems] = useState<RecentScheme[]>([])
 
   useEffect(() => {
     try {
