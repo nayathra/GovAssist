@@ -33,7 +33,6 @@ const SchemesPage = ({
 
   const limit = 12
 
-  // Load real categories from backend
   useEffect(() => {
     const fetchFilters = async () => {
       try {
@@ -44,7 +43,6 @@ const SchemesPage = ({
         }
 
         const data = await response.json()
-
         setCategories(data.categories || [])
       } catch (error) {
         console.error("Failed to load filters:", error)
@@ -54,7 +52,6 @@ const SchemesPage = ({
     fetchFilters()
   }, [])
 
-  // Load schemes from backend
   useEffect(() => {
     const fetchSchemes = async () => {
       try {
@@ -86,7 +83,6 @@ const SchemesPage = ({
         }
 
         const data = await response.json()
-
         setSchemes(data.schemes || [])
         setTotal(data.total || 0)
       } catch (error) {
@@ -101,7 +97,6 @@ const SchemesPage = ({
     fetchSchemes()
   }, [search, category, level, page])
 
-  // Reset to first page whenever filters change
   useEffect(() => {
     setPage(1)
   }, [search, category, level])
@@ -124,24 +119,23 @@ const SchemesPage = ({
             </div>
 
             <div>
-              <h1 className="text-lg font-bold text-[#073b6f]">
-                GovAssist
-              </h1>
+              <h1 className="text-lg font-bold text-[#073b6f]">GovAssist</h1>
 
-              <p className="text-xs text-slate-500">
-                {t("brandTagline")}
-              </p>
+              <p className="text-xs text-slate-500">{t("brandTagline")}</p>
             </div>
           </div>
 
-          <button
-            onClick={() => window.history.back()}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            ← Back
-          </button>
-        <LanguageSwitcher />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.history.back()}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              ← Back
+            </button>
+
+            <LanguageSwitcher />
           </div>
+        </div>
       </header>
 
       {/* Page intro */}
@@ -168,7 +162,6 @@ const SchemesPage = ({
       <section className="mx-auto max-w-7xl px-6 py-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[1fr_220px_180px]">
-            {/* Search */}
             <div className="relative">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate-400">
                 🔎
@@ -183,7 +176,6 @@ const SchemesPage = ({
               />
             </div>
 
-            {/* Category */}
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -198,7 +190,6 @@ const SchemesPage = ({
               ))}
             </select>
 
-            {/* Level */}
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
@@ -238,68 +229,46 @@ const SchemesPage = ({
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {schemes.map((scheme) => (
                 <article
                   key={scheme.slug}
-                  className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg"
+                  className="group flex min-h-[270px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-[#b8cce1] hover:shadow-md"
                 >
-                  <div className="mb-5 flex items-start justify-between gap-3">
-                    <span className="rounded-full bg-[#eaf7f2] px-3 py-1 text-xs font-semibold text-[#07845b]">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="max-w-[75%] rounded-full bg-[#eaf7f2] px-2.5 py-1 text-[11px] font-semibold leading-4 text-[#07845b]">
                       {scheme.schemeCategory || "General"}
                     </span>
 
-                    <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-semibold text-[#073b6f]">
+                    <span className="shrink-0 rounded-full bg-[#eef4fb] px-2.5 py-1 text-[11px] font-semibold text-[#073b6f]">
                       {scheme.level}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold leading-7 text-[#073b6f]">
+                  <h3 className="mt-4 line-clamp-3 text-base font-bold leading-6 text-[#073b6f]">
                     {scheme.scheme_name}
                   </h3>
 
-                  <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
-                    {scheme.details || "Scheme details are available."}
-                  </p>
-
-                  <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      {t("benefitsPreview")}
+                  <div className="mt-3 flex-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Objective
                     </p>
 
-                    <p className="mt-1 text-sm font-medium text-slate-700">
-                      {scheme.benefits || t("benefitsAvailable")}
+                    <p className="mt-1 line-clamp-3 text-sm leading-5 text-slate-600">
+                      {scheme.details || "Scheme information is available in the details page."}
                     </p>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {scheme.tags
-                      ?.split(",")
-                      .map((tag) => tag.trim())
-                      .filter(Boolean)
-                      .slice(0, 5)
-                      .map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                  </div>
-
-                  {/* View Details */}
                   <button
                     onClick={() => onViewDetails(scheme.slug)}
-                    className="mt-6 flex items-center justify-center rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
+                    className="mt-4 flex items-center justify-center rounded-xl border border-[#073b6f] bg-white px-4 py-2.5 text-sm font-bold text-[#073b6f] transition hover:bg-[#073b6f] hover:text-white"
                   >
-                    {t("viewDetails")}
+                    {t("viewDetails")} →
                   </button>
                 </article>
               ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-10 flex items-center justify-center gap-3">
                 <button
@@ -334,9 +303,7 @@ const SchemesPage = ({
               {t("noMatching")}
             </h3>
 
-            <p className="mt-2 text-sm text-slate-500">
-              {t("tryFilters")}
-            </p>
+            <p className="mt-2 text-sm text-slate-500">{t("tryFilters")}</p>
           </div>
         )}
       </main>
@@ -365,9 +332,7 @@ const SchemesPage = ({
             </p>
           </div>
 
-          <p className="text-xs text-white/70">
-            {t("academicFooter")}
-          </p>
+          <p className="text-xs text-white/70">{t("academicFooter")}</p>
         </div>
       </footer>
     </div>
