@@ -1,9 +1,27 @@
+import re
+
 from fastapi import APIRouter, HTTPException, Query
 
-from app.data_loader import load_schemes
+from app.database import get_schemes_collection
 
 
 router = APIRouter(prefix="/api/schemes", tags=["Schemes"])
+
+SEARCH_FIELDS = [
+    "scheme_name",
+    "details",
+    "benefits",
+    "eligibility",
+    "tags",
+]
+
+
+def _text_filter(value: str) -> dict:
+    escaped = re.escape(value.strip())
+    return {
+        "$regex": escaped,
+        "$options": "i",
+    }
 
 
 @router.get("")
@@ -14,72 +32,54 @@ def get_schemes(
     category: str = Query("", max_length=100),
     level: str = Query("", max_length=50),
 ):
-    df = load_schemes()
+    collection = get_schemes_collection()
 
-    # Search across important text fields
+    filters: list[dict] = []
+
     if search.strip():
-        search_text = search.strip().lower()
+        search_filter = {
+            "$or": [
+                {field: _text_filter(search)}
+                for field in SEARCH_FIELDS
+            ]
+        }
+        filters.append(search_filter)
 
-        searchable_columns = [
-            "scheme_name",
-            "details",
-            "benefits",
-            "eligibility",
-            "tags",
-        ]
+    if category.strip():
+        filters.append({"schemeCategory": _text_filter(category)})
 
-        mask = False
+    if level.strip():
+        filters.append({"level": _text_filter(level)})
 
-        for column in searchable_columns:
-            if column in df.columns:
-                mask = mask | df[column].astype(str).str.contains(
-                    search_text,
-                    case=False,
-                    na=False,
-                    regex=False,
-                )
+    query = {"$and": filters} if filters else {}
 
-        df = df[mask]
+    total = collection.count_documents(query)
+    skip = (page - 1) * limit
 
-    # Category filter
-    if category.strip() and "schemeCategory" in df.columns:
-        df = df[
-            df["schemeCategory"]
-            .astype(str)
-            .str.contains(category.strip(), case=False, na=False, regex=False)
-        ]
-
-    # Central / State filter
-    if level.strip() and "level" in df.columns:
-        df = df[
-            df["level"]
-            .astype(str)
-            .str.contains(level.strip(), case=False, na=False, regex=False)
-        ]
-
-    total = len(df)
-
-    start = (page - 1) * limit
-    end = start + limit
-
-    schemes = df.iloc[start:end].to_dict(orient="records")
+    documents = list(
+        collection.find(query, {"_id": 0})
+        .sort("scheme_name", 1)
+        .skip(skip)
+        .limit(limit)
+    )
 
     return {
         "page": page,
         "limit": limit,
         "total": total,
-        "count": len(schemes),
-        "schemes": schemes,
+        "count": len(documents),
+        "schemes": documents,
     }
+
 
 @router.get("/filters")
 def get_filters():
-    df = load_schemes()
+    collection = get_schemes_collection()
 
     categories = sorted(
         {
             str(value).strip()
-            for value in df["schemeCategory"].tolist()
+            for value in collection.distinct("schemeCategory")
             if str(value).strip()
         }
     )
@@ -87,7 +87,7 @@ def get_filters():
     levels = sorted(
         {
             str(value).strip()
-            for value in df["level"].tolist()
+            for value in collection.distinct("level")
             if str(value).strip()
         }
     )
@@ -97,21 +97,21 @@ def get_filters():
         "levels": levels,
     }
 
+
 @router.get("/{slug}")
 def get_scheme_by_slug(slug: str):
-    df = load_schemes()
+    collection = get_schemes_collection()
 
-    matches = df[
-        df["slug"].astype(str).str.lower() == slug.lower()
-    ]
+    scheme = collection.find_one(
+        {"slug": {"$regex": f"^{re.escape(slug)}$", "$options": "i"}},
+        {"_id": 0},
+    )
 
-    if matches.empty:
+    if scheme is None:
         raise HTTPException(
             status_code=404,
             detail="Scheme not found",
         )
-
-    scheme = matches.iloc[0].to_dict()
 
     return {
         "scheme": scheme
