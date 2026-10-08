@@ -113,6 +113,26 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     ):
         conflicts.append("Eligibility appears restricted to females/women.")
 
+    # Explicit state/residence restrictions. Only treat a state as a hard
+    # requirement when the eligibility text directly ties residence/domicile
+    # to that state. General mentions of other states elsewhere are ignored.
+    if profile.state and profile.state != "Other / All India":
+        state_pattern = re.compile(
+            r"(?:resid(?:ing|ence)|domicile|native|belong(?:ing)?|state)\\s*(?:in|of|from|:)?\\s*([a-z][a-z .&-]{2,50})",
+            re.IGNORECASE,
+        )
+        explicit_states = {m.group(1).strip(" .,:;") for m in state_pattern.finditer(eligibility)}
+        normalized_profile_state = profile.state.lower().strip()
+        state_conflicts = []
+        for stated in explicit_states:
+            normalized_stated = re.sub(r"\\s+", " ", stated.lower()).strip()
+            if normalized_profile_state not in normalized_stated and normalized_stated not in normalized_profile_state:
+                state_conflicts.append(stated)
+        if state_conflicts:
+            conflicts.append(
+                f"The eligibility appears restricted to {state_conflicts[0]}, not {profile.state}."
+            )
+
     # Explicit age thresholds. These are treated as hard conflicts only when
     # the profile age is definitely outside the stated limit.
     if profile.age:
