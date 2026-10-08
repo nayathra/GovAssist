@@ -132,6 +132,7 @@ const ProfilePage = ({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
+    localStorage.setItem("govassist_profile", JSON.stringify(profile))
     onFindSchemes(profile)
   }
 
