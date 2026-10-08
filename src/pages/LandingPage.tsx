@@ -130,12 +130,7 @@ const LandingPage = ({
               <span className="text-[#0f8a5f]">{t("heroProfile")}</span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Discover government schemes, understand available benefits and
-              eligibility information, and ask questions through an
-              AI-assisted interface designed to make scheme information easier
-              to understand.
-            </p>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">{t("heroDescription")}</p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
@@ -223,10 +218,7 @@ const LandingPage = ({
                       <p className="mt-1 text-sm font-bold text-[#102a43]">
                         {t("educationStudent{t("schemes")}")}
                       </p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">
-                        Recommendations are based on the profile information
-                        you provide and available scheme data.
-                      </p>
+                      <p className="mt-2 text-xs leading-5 text-slate-500">{t("recommendationBasis")}</p>
                     </div>
                   </div>
 
@@ -283,10 +275,7 @@ const LandingPage = ({
             <h2 className="mt-3 text-3xl font-extrabold text-[#102a43] sm:text-4xl">
               {t("onePlace")}
             </h2>
-            <p className="mt-4 text-sm leading-6 text-slate-600 sm:text-base">
-              GovAssist brings profile-based discovery, search and AI-assisted
-              information together in one simple interface.
-            </p>
+            <p className="mt-4 text-sm leading-6 text-slate-600 sm:text-base">{t("onePlaceDesc")}</p>
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
