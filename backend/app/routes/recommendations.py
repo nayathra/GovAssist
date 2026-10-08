@@ -113,8 +113,9 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     ):
         conflicts.append("Eligibility appears restricted to females/women.")
 
-    # Explicit state/residence restrictions. Only use state names when
-    # they occur in a direct eligibility phrase, not in general scheme text.
+    # Explicit state/residence restrictions.
+    # For state-level schemes, the scheme's own description can identify the
+    # implementing state even when the eligibility text omits a domicile line.
     if profile.state and profile.state != "Other / All India":
         indian_states = (
             "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
@@ -125,8 +126,9 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             "Uttar Pradesh", "Uttarakhand", "West Bengal",
         )
         normalized_profile_state = profile.state.lower().strip()
-        restricted_states: list[str] = []
 
+        # Direct residence/domicile wording in eligibility.
+        restricted_states: list[str] = []
         for state_name in indian_states:
             state_lower = state_name.lower()
             if state_lower == normalized_profile_state:
@@ -141,9 +143,28 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             if any(re.search(pattern, eligibility, re.IGNORECASE) for pattern in direct_patterns):
                 restricted_states.append(state_name)
 
+        # State-level schemes can also identify their jurisdiction in the
+        # description, e.g. "Government of Chhattisgarh". This prevents a
+        # Chhattisgarh scheme from being recommended to a Tamil Nadu profile.
+        if str(row.get("level", "")).strip().lower() == "state":
+            scheme_context = " ".join(
+                str(row.get(field, "")) for field in ("scheme_name", "details", "benefits")
+            ).lower()
+            for state_name in indian_states:
+                state_lower = state_name.lower()
+                if state_lower == normalized_profile_state:
+                    continue
+                state_patterns = (
+                    rf"government\\s+of\\s+{re.escape(state_lower)}",
+                    rf"govt\\.?\\s+of\\s+{re.escape(state_lower)}",
+                    rf"department[^.]{0,100}\\b{re.escape(state_lower)}\\b",
+                )
+                if any(re.search(pattern, scheme_context, re.IGNORECASE) for pattern in state_patterns):
+                    restricted_states.append(state_name)
+
         if restricted_states:
             conflicts.append(
-                f"The eligibility appears restricted to {restricted_states[0]}, not {profile.state}."
+                f"The scheme appears restricted to {restricted_states[0]}, not {profile.state}."
             )
 
     # Explicit age thresholds. These are treated as hard conflicts only when
