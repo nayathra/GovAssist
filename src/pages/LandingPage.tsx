@@ -11,10 +11,14 @@ const LandingPage = ({
   onGetStarted,
   onExploreSchemes,
   onAskAI,
+  onLogin,
+  user,
 }: {
   onGetStarted: () => void
   onExploreSchemes: () => void
   onAskAI: () => void
+  onLogin: () => void
+  user: { id: number; name: string; email: string } | null
 }) => {
   const [activeTab, setActiveTab] = useState<"profile" | "ai">("profile")
 
@@ -81,8 +85,11 @@ const LandingPage = ({
           </nav>
 
           <div className="hidden items-center gap-3 sm:flex">
-            <button className="rounded-lg px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50">
-              Login
+            <button
+              onClick={onLogin}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50"
+            >
+              {user ? `Hi, ${user.name.split(" ")[0]}` : "Login"}
             </button>
            <button
   onClick={onGetStarted}
