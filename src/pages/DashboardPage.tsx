@@ -229,6 +229,7 @@ const RecentlyViewed = ({
 }: {
   onViewScheme: (schemeSlug: string) => void
 }) => {
+  const { t } = useLanguage()
   const [items, setItems] = useState<RecentScheme[]>([])
 
   useEffect(() => {
