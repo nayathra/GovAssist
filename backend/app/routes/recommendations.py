@@ -94,8 +94,7 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     profile, plus softer warnings where the available profile data is not
     enough to confirm a requirement.
 
-    This deliberately avoids treating a broad profile range as proof of an
-    exact threshold. Unknown conditions remain unknown.
+    Unknown conditions remain unknown rather than being treated as satisfied.
     """
     eligibility = _eligibility_text(row)
     conflicts: list[str] = []
@@ -114,8 +113,6 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
         conflicts.append("Eligibility appears restricted to females/women.")
 
     # Explicit state/residence restrictions.
-    # For state-level schemes, the scheme's own description can identify the
-    # implementing state even when the eligibility text omits a domicile line.
     if profile.state and profile.state != "Other / All India":
         indian_states = (
             "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
@@ -143,8 +140,6 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             if any(re.search(pattern, eligibility, re.IGNORECASE) for pattern in direct_patterns):
                 restricted_states.append(state_name)
 
-        # State-level schemes can also identify their jurisdiction in the
-        # description, e.g. "Government of Chhattisgarh".
         if str(row.get("level", "")).strip().lower() == "state":
             scheme_context = " ".join(
                 str(row.get(field, "")) for field in ("scheme_name", "details", "benefits")
@@ -224,21 +219,24 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                 "The profile gives an income range; exact income thresholds in the scheme data may still need verification."
             )
 
-    # Important conditions that the current profile form cannot directly
-    # verify. Keep these as warnings instead of pretending they are satisfied.
+    # Conditions that the current profile form cannot directly verify.
     if _has(eligibility, "destitute"):
-        warnings.append("The scheme mentions a destitute-status requirement; the current profile does not establish this condition.")
+        warnings.append(
+            "The scheme mentions a destitute-status requirement; the current profile does not establish this condition."
+        )
     if _has(eligibility, "fixed assets", "total assets", "movable and immovable assets"):
-        warnings.append("The scheme mentions an asset-value requirement; the current profile does not establish the applicant's asset value.")
+        warnings.append(
+            "The scheme mentions an asset-value requirement; the current profile does not establish the applicant's asset value."
+        )
     if _has(eligibility, "returned migrant", "return migrant", "migrant workers returned", "returned to tamil nadu"):
-        warnings.append("The scheme mentions a returned-migrant condition; the current profile does not establish this condition.")
+        warnings.append(
+            "The scheme mentions a returned-migrant condition; the current profile does not establish this condition."
+        )
 
     return list(dict.fromkeys(conflicts)), list(dict.fromkeys(warnings))
 
 
-def _score_profile(
-    row, profile: ProfileRequest
-) -> Optional[tuple[int, list[str], list[str]]]:
+def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str], list[str]]]:
     text = _text(row)
     score = 0
     matches: list[str] = []
@@ -388,6 +386,17 @@ def get_recommendations(profile: ProfileRequest):
         key=lambda item: (item["relevance_score"], -len(item["eligibility_warnings"])),
         reverse=True,
     )
+
+    # Prefer schemes whose known eligibility conditions do not contain
+    # unresolved profile requirements. If enough clean matches exist, don't
+    # fill the top results with schemes that require a condition the profile
+    # form cannot establish (e.g. returned-migrant or destitute status).
+    clean_recommendations = [
+        item for item in recommendations if not item["eligibility_warnings"]
+    ]
+
+    if len(clean_recommendations) >= 3:
+        recommendations = clean_recommendations
 
     return {
         "profile": profile.model_dump(),
