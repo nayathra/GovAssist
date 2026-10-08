@@ -154,10 +154,10 @@ const LandingPage = ({
 
             <div className="mt-9 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                ["01", "{t("profileDiscovery")}"],
-                ["02", "{t("aiAnswers")}"],
-                ["03", "{t("schemeInformation")}"],
-                ["04", "{t("easyUnderstand")}"],
+                ["01", t("profileDiscovery")],
+                ["02", t("aiAnswers")],
+                ["03", t("schemeInformation")],
+                ["04", t("easyUnderstand")],
               ].map(([number, label]) => (
                 <div key={number} className="flex items-start gap-2">
                   <span className="text-xs font-bold text-[#0f8a5f]">
@@ -292,18 +292,18 @@ const LandingPage = ({
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
               {
-                title: "{t("personalizedDiscovery")}",
-                text: "{t("personalizedText")}",
+                title: t("personalizedDiscovery"),
+                text: t("personalizedText"),
                 icon: "01",
               },
               {
-                title: "{t("searchExplore")}",
-                text: "{t("searchExploreText")}",
+                title: t("searchExplore"),
+                text: t("searchExploreText"),
                 icon: "02",
               },
               {
-                title: "{t("aiAssistant")}",
-                text: "{t("aiAssistantText")}",
+                title: t("aiAssistant"),
+                text: t("aiAssistantText"),
                 icon: "03",
               },
             ].map((item) => (
@@ -340,9 +340,9 @@ const LandingPage = ({
 
           <div className="mt-12 grid gap-8 md:grid-cols-3">
             {[
-              ["1", "{t("createProfileStep")}", "{t("createProfileText")}"],
-              ["2", "{t("discoverStep")}", "{t("discoverText")}"],
-              ["3", "{t("askAIStep")}", "{t("askAIText")}"],
+              ["1", t("createProfileStep"), t("createProfileText")],
+              ["2", t("discoverStep"), t("discoverText")],
+              ["3", t("askAIStep"), t("askAIText")],
             ].map(([number, title, text]) => (
               <div key={number} className="relative text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#073b6f] text-lg font-extrabold text-white">
