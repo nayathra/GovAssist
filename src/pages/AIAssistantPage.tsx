@@ -57,7 +57,7 @@ const AIAssistantPage = () => {
     },
   ])
 
-  const handle{t("send")} = async (messageText?: string) => {
+  const handleSend = async (messageText?: string) => {
     const text = (messageText ?? input).trim()
 
     if (!text) return
@@ -168,8 +168,7 @@ const AIAssistantPage = () => {
           </div>
 
           <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-600">
-            Ask questions about government schemes and use the assistant to
-            understand information available in the GovAssist scheme database.
+            {t("askAboutSchemes")}
           </p>
         </section>
 
@@ -248,7 +247,7 @@ const AIAssistantPage = () => {
               {suggestedQuestions.map((question) => (
                 <button
                   key={question}
-                  onClick={() => handle{t("send")}(question)}
+                  onClick={() => handleSend(question)}
                   className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition hover:border-[#073b6f] hover:bg-[#eef4fb] hover:text-[#073b6f]"
                 >
                   {question}
@@ -266,16 +265,16 @@ const AIAssistantPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
-                    handle{t("send")}()
+                    handleSend()
                   }
                 }}
                 rows={1}
-                placeholder="{t("askSchemesPlaceholder")}"
+                placeholder={t("askSchemesPlaceholder")}
                 className="min-h-[42px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
               />
 
               <button
-                onClick={() => handle{t("send")}()}
+                onClick={() => handleSend()}
                 className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59]"
               >
                 {t("send")}
