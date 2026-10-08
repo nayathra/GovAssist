@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 import type { Profile } from "./ProfilePage"
 
 type DashboardProps = {
@@ -24,6 +25,7 @@ const DashboardPage = ({
   onLogout,
   onViewScheme,
 }: DashboardProps) => {
+  const { t } = useLanguage()
   const profileComplete = Boolean(profile?.name && profile?.age && profile?.state && profile?.occupation)
 
   return (
@@ -50,7 +52,8 @@ const DashboardPage = ({
               Logout
             </button>
           </div>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       <main className="mx-auto max-w-[1250px] px-5 py-8 sm:px-8 sm:py-10">
