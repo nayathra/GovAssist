@@ -6,6 +6,7 @@ from app.routes.recommendations import router as recommendations_router
 from app.routes.assistant import router as assistant_router
 from app.routes.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 
 app = FastAPI(
@@ -14,9 +15,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
