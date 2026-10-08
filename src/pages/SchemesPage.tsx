@@ -1,117 +1,110 @@
-import { useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 type Scheme = {
-  id: number
-  name: string
-  category: string
-  level: "Central" | "State"
-  description: string
+  scheme_name: string
+  slug: string
+  details: string
   benefits: string
-  tags: string[]
+  eligibility: string
+  application: string
+  documents: string
+  level: string
+  schemeCategory: string
+  tags: string
 }
 
-const demoSchemes: Scheme[] = [
-  {
-    id: 1,
-    name: "Education Support Scheme (Demo)",
-    category: "Education",
-    level: "Central",
-    description:
-      "A sample scheme preview designed to demonstrate how education-related government support could be displayed.",
-    benefits: "Education assistance, student support",
-    tags: ["Students", "Education"],
-  },
-  {
-    id: 2,
-    name: "Agriculture Assistance Scheme (Demo)",
-    category: "Agriculture",
-    level: "State",
-    description:
-      "A sample scheme preview for demonstrating agriculture-related assistance and support.",
-    benefits: "Agricultural support, farmer assistance",
-    tags: ["Farmers", "Agriculture"],
-  },
-  {
-    id: 3,
-    name: "Employment & Skill Development Scheme (Demo)",
-    category: "Employment",
-    level: "Central",
-    description:
-      "A sample scheme preview showing how employment and skill-development opportunities can be presented.",
-    benefits: "Skill development, employment support",
-    tags: ["Employment", "Skills"],
-  },
-  {
-    id: 4,
-    name: "Health Support Scheme (Demo)",
-    category: "Health",
-    level: "Central",
-    description:
-      "A sample scheme preview for demonstrating health-related government support information.",
-    benefits: "Healthcare support, medical assistance",
-    tags: ["Health", "Healthcare"],
-  },
-  {
-    id: 5,
-    name: "Housing Assistance Scheme (Demo)",
-    category: "Housing",
-    level: "State",
-    description:
-      "A sample scheme preview for demonstrating housing and household assistance.",
-    benefits: "Housing support, household assistance",
-    tags: ["Housing", "Households"],
-  },
-  {
-    id: 6,
-    name: "Women & Child Support Scheme (Demo)",
-    category: "Women & Child",
-    level: "State",
-    description:
-      "A sample scheme preview for demonstrating women and child welfare information.",
-    benefits: "Family support, welfare assistance",
-    tags: ["Women", "Children"],
-  },
-]
-
-const categories = [
-  "All Categories",
-  "Education",
-  "Agriculture",
-  "Employment",
-  "Health",
-  "Housing",
-  "Women & Child",
-]
-
-const levels = ["All Levels", "Central", "State"]
+const API_BASE_URL = "http://127.0.0.1:8000"
 
 const SchemesPage = ({
   onViewDetails,
 }: {
-  onViewDetails: (schemeName: string) => void
+  onViewDetails: (schemeSlug: string) => void
 }) => {
+  const [schemes, setSchemes] = useState<Scheme[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("All Categories")
   const [level, setLevel] = useState("All Levels")
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
-  const filteredSchemes = useMemo(() => {
-    return demoSchemes.filter((scheme) => {
-      const searchText = search.toLowerCase()
+  const limit = 12
 
-      const matchesSearch =
-        scheme.name.toLowerCase().includes(searchText) ||
-        scheme.description.toLowerCase().includes(searchText) ||
-        scheme.tags.some((tag) => tag.toLowerCase().includes(searchText))
+  // Load real categories from backend
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/schemes/filters`)
 
-      const matchesCategory =
-        category === "All Categories" || scheme.category === category
+        if (!response.ok) {
+          throw new Error("Failed to load filters")
+        }
 
-      const matchesLevel =
-        level === "All Levels" || scheme.level === level
+        const data = await response.json()
 
-      return matchesSearch && matchesCategory && matchesLevel
-    })
+        setCategories(data.categories || [])
+      } catch (error) {
+        console.error("Failed to load filters:", error)
+      }
+    }
+
+    fetchFilters()
+  }, [])
+
+  // Load schemes from backend
+  useEffect(() => {
+    const fetchSchemes = async () => {
+      try {
+        setLoading(true)
+
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        })
+
+        if (search.trim()) {
+          params.set("search", search.trim())
+        }
+
+        if (category !== "All Categories") {
+          params.set("category", category)
+        }
+
+        if (level !== "All Levels") {
+          params.set("level", level)
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/schemes?${params.toString()}`
+        )
+
+        if (!response.ok) {
+          throw new Error("Failed to load schemes")
+        }
+
+        const data = await response.json()
+
+        setSchemes(data.schemes || [])
+        setTotal(data.total || 0)
+      } catch (error) {
+        console.error("Failed to load schemes:", error)
+        setSchemes([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSchemes()
+  }, [search, category, level, page])
+
+  // Reset to first page whenever filters change
+  useEffect(() => {
+    setPage(1)
   }, [search, category, level])
+
+  const totalPages = Math.ceil(total / limit)
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
@@ -161,9 +154,8 @@ const SchemesPage = ({
             </h2>
 
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Search and explore schemes by category and level. Detailed
-              eligibility information will be connected to the GovAssist
-              database in the next stage.
+              Search and explore schemes by category and level using the
+              GovAssist scheme database.
             </p>
           </div>
         </div>
@@ -194,8 +186,12 @@ const SchemesPage = ({
               onChange={(e) => setCategory(e.target.value)}
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#073b6f]"
             >
+              <option>All Categories</option>
+
               {categories.map((item) => (
-                <option key={item}>{item}</option>
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
 
@@ -205,9 +201,9 @@ const SchemesPage = ({
               onChange={(e) => setLevel(e.target.value)}
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#073b6f]"
             >
-              {levels.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
+              <option>All Levels</option>
+              <option>Central</option>
+              <option>State</option>
             </select>
           </div>
         </div>
@@ -215,62 +211,118 @@ const SchemesPage = ({
 
       {/* Scheme cards */}
       <main className="mx-auto max-w-7xl px-6 pb-16">
-        {filteredSchemes.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSchemes.map((scheme) => (
-              <article
-                key={scheme.id}
-                className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <span className="rounded-full bg-[#eaf7f2] px-3 py-1 text-xs font-semibold text-[#07845b]">
-                    {scheme.category}
-                  </span>
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center">
+            <div className="text-4xl">⏳</div>
 
-                  <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-semibold text-[#073b6f]">
-                    {scheme.level}
-                  </span>
-                </div>
+            <h3 className="mt-4 text-lg font-bold text-[#073b6f]">
+              Loading schemes...
+            </h3>
 
-                <h3 className="text-lg font-bold leading-7 text-[#073b6f]">
-                  {scheme.name}
-                </h3>
-
-                <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
-                  {scheme.description}
-                </p>
-
-                <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Benefits Preview
-                  </p>
-
-                  <p className="mt-1 text-sm font-medium text-slate-700">
-                    {scheme.benefits}
-                  </p>
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {scheme.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* View Details */}
-                <button
-                  onClick={() => onViewDetails(scheme.name)}
-                  className="mt-6 flex items-center justify-center rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
-                >
-                  View Details →
-                </button>
-              </article>
-            ))}
+            <p className="mt-2 text-sm text-slate-500">
+              Fetching scheme information from the GovAssist database.
+            </p>
           </div>
+        ) : schemes.length > 0 ? (
+          <>
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-sm text-slate-500">
+                Showing {schemes.length} of {total.toLocaleString()} schemes
+              </p>
+
+              <p className="text-sm font-semibold text-[#073b6f]">
+                Page {page} of {totalPages}
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {schemes.map((scheme) => (
+                <article
+                  key={scheme.slug}
+                  className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="mb-5 flex items-start justify-between gap-3">
+                    <span className="rounded-full bg-[#eaf7f2] px-3 py-1 text-xs font-semibold text-[#07845b]">
+                      {scheme.schemeCategory || "General"}
+                    </span>
+
+                    <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-semibold text-[#073b6f]">
+                      {scheme.level}
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-bold leading-7 text-[#073b6f]">
+                    {scheme.scheme_name}
+                  </h3>
+
+                  <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
+                    {scheme.details || "Scheme details are available."}
+                  </p>
+
+                  <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Benefits Preview
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {scheme.benefits || "Benefits information available in details."}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {scheme.tags
+                      ?.split(",")
+                      .map((tag) => tag.trim())
+                      .filter(Boolean)
+                      .slice(0, 5)
+                      .map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                  </div>
+
+                  {/* View Details */}
+                  <button
+                    onClick={() => onViewDetails(scheme.slug)}
+                    className="mt-6 flex items-center justify-center rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
+                  >
+                    View Details →
+                  </button>
+                </article>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-10 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={page === 1}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ← Previous
+                </button>
+
+                <span className="rounded-xl bg-[#073b6f] px-4 py-2 text-sm font-bold text-white">
+                  {page}
+                </span>
+
+                <button
+                  onClick={() =>
+                    setPage((current) => Math.min(totalPages, current + 1))
+                  }
+                  disabled={page === totalPages}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <div className="text-4xl">🔎</div>
@@ -286,14 +338,15 @@ const SchemesPage = ({
         )}
       </main>
 
-      {/* Demo disclaimer */}
+      {/* Disclaimer */}
       <section className="border-t border-[#ead89a] bg-[#fff9df]">
         <div className="mx-auto max-w-7xl px-6 py-5">
           <p className="text-center text-xs leading-5 text-slate-700">
-            <strong>Demo notice:</strong> The scheme information shown on this
-            page is sample frontend data for the GovAssist project. It is not
-            official government scheme information and should not be used to
-            determine eligibility.
+            <strong>Important:</strong> GovAssist provides scheme information
+            for educational and informational purposes. A scheme appearing in
+            search results does not guarantee eligibility. Please verify
+            eligibility and application requirements with the relevant
+            government authority.
           </p>
         </div>
       </section>

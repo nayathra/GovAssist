@@ -1,13 +1,31 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-type SchemeDetailsPageProps = {
-  schemeName: string
+type Scheme = {
+  scheme_name: string
+  slug: string
+  details: string
+  benefits: string
+  eligibility: string
+  application: string
+  documents: string
+  level: string
+  schemeCategory: string
+  tags: string
 }
 
+type SchemeDetailsPageProps = {
+  schemeSlug: string
+}
+
+const API_BASE_URL = "http://127.0.0.1:8000"
+
 const SchemeDetailsPage = ({
-  schemeName,
+  schemeSlug,
 }: SchemeDetailsPageProps) => {
   const [activeTab, setActiveTab] = useState("Overview")
+  const [scheme, setScheme] = useState<Scheme | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const tabs = [
     "Overview",
@@ -16,6 +34,91 @@ const SchemeDetailsPage = ({
     "Documents",
     "How to Apply",
   ]
+
+  useEffect(() => {
+    const fetchScheme = async () => {
+      try {
+        setLoading(true)
+        setError("")
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/schemes/${encodeURIComponent(schemeSlug)}`
+        )
+
+        if (!response.ok) {
+          throw new Error("Scheme not found")
+        }
+
+        const data = await response.json()
+
+        setScheme(data.scheme)
+      } catch (err) {
+        console.error("Failed to load scheme:", err)
+        setScheme(null)
+        setError("Unable to load this scheme.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchScheme()
+  }, [schemeSlug])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
+        <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
+          Government Scheme Recommendation & AI Assistant
+        </div>
+
+        <div className="flex min-h-[70vh] items-center justify-center px-6">
+          <div className="text-center">
+            <div className="text-4xl">⏳</div>
+
+            <h2 className="mt-4 text-xl font-bold text-[#073b6f]">
+              Loading scheme details...
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Fetching information from the GovAssist scheme database.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !scheme) {
+    return (
+      <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
+        <div className="bg-[#071d35] px-6 py-2 text-center text-xs text-white/80">
+          Government Scheme Recommendation & AI Assistant
+        </div>
+
+        <div className="flex min-h-[70vh] items-center justify-center px-6">
+          <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <div className="text-4xl">⚠️</div>
+
+            <h2 className="mt-4 text-xl font-bold text-[#073b6f]">
+              Scheme not found
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              We couldn't find this scheme in the available GovAssist
+              dataset.
+            </p>
+
+            <button
+              onClick={() => window.history.back()}
+              className="mt-6 rounded-xl bg-[#073b6f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
+            >
+              ← Back to Schemes
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
@@ -58,21 +161,21 @@ const SchemeDetailsPage = ({
           <div className="max-w-4xl">
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full bg-[#eaf7f2] px-3 py-1 text-xs font-semibold text-[#07845b]">
-                Demo Scheme
+                {scheme.schemeCategory || "General"}
               </span>
 
               <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-semibold text-[#073b6f]">
-                Government Scheme
+                {scheme.level || "Government Scheme"}
               </span>
             </div>
 
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-[#073b6f] md:text-4xl">
-              {schemeName || "Education Support Scheme (Demo)"}
+              {scheme.scheme_name}
             </h2>
 
             <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-              Explore the available information about this scheme in a simple
-              and structured format.
+              Explore the available information about this scheme in a
+              simple and structured format.
             </p>
           </div>
         </div>
@@ -111,34 +214,54 @@ const SchemeDetailsPage = ({
                     Scheme Overview
                   </h3>
 
-                  <p className="mt-4 leading-7 text-slate-600">
-                    This section will contain the detailed description of the
-                    selected government scheme. During the backend integration
-                    stage, this information will be retrieved from the
-                    GovAssist scheme dataset.
+                  <p className="mt-4 whitespace-pre-line leading-7 text-slate-600">
+                    {scheme.details || "No overview information is available."}
                   </p>
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2">
                     <InfoBox
                       label="Scheme Name"
-                      value={schemeName || "Demo Scheme"}
+                      value={scheme.scheme_name}
                     />
 
                     <InfoBox
                       label="Scheme Category"
-                      value="To be connected"
+                      value={scheme.schemeCategory || "Not specified"}
                     />
 
                     <InfoBox
                       label="Scheme Level"
-                      value="To be connected"
+                      value={scheme.level || "Not specified"}
                     />
 
                     <InfoBox
                       label="Information Source"
-                      value="GovAssist Dataset"
+                      value="GovAssist Scheme Dataset"
                     />
                   </div>
+
+                  {scheme.tags && (
+                    <div className="mt-8">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Tags
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {scheme.tags
+                          .split(",")
+                          .map((tag) => tag.trim())
+                          .filter(Boolean)
+                          .map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-md bg-slate-100 px-3 py-1.5 text-xs text-slate-600"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -149,19 +272,14 @@ const SchemeDetailsPage = ({
                     Eligibility
                   </h3>
 
-                  <p className="mt-4 leading-7 text-slate-600">
-                    Eligibility information will be displayed here using the
-                    eligibility information available in the scheme dataset.
-                  </p>
-
                   <div className="mt-6 rounded-xl bg-[#f7f9fc] p-5">
                     <p className="text-sm font-semibold text-slate-700">
                       Eligibility Information
                     </p>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Detailed eligibility information will be connected when
-                      the real scheme dataset is integrated.
+                    <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
+                      {scheme.eligibility ||
+                        "No eligibility information is available in the dataset."}
                     </p>
                   </div>
 
@@ -171,9 +289,10 @@ const SchemeDetailsPage = ({
                     </p>
 
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Showing a scheme does not mean that the user is
-                      officially eligible. Eligibility should always be
-                      verified using the relevant official information.
+                      This information is provided from the available scheme
+                      dataset. It does not determine or guarantee official
+                      eligibility. Please verify the requirements with the
+                      relevant government authority.
                     </p>
                   </div>
                 </div>
@@ -186,30 +305,11 @@ const SchemeDetailsPage = ({
                     Benefits
                   </h3>
 
-                  <p className="mt-4 text-sm leading-6 text-slate-600">
-                    Benefits available under the selected scheme will be
-                    displayed here from the connected scheme data.
-                  </p>
-
-                  <div className="mt-6 space-y-3">
-                    {[
-                      "Scheme-related assistance",
-                      "Support for eligible beneficiaries",
-                      "Benefits based on applicable scheme conditions",
-                    ].map((benefit) => (
-                      <div
-                        key={benefit}
-                        className="flex items-start gap-3 rounded-xl bg-slate-50 p-4"
-                      >
-                        <span className="mt-0.5 font-bold text-[#07845b]">
-                          ✓
-                        </span>
-
-                        <p className="text-sm leading-6 text-slate-600">
-                          {benefit}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="mt-6 rounded-xl bg-slate-50 p-5">
+                    <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+                      {scheme.benefits ||
+                        "No benefits information is available in the dataset."}
+                    </p>
                   </div>
                 </div>
               )}
@@ -221,26 +321,11 @@ const SchemeDetailsPage = ({
                     Required Documents
                   </h3>
 
-                  <p className="mt-4 text-sm leading-6 text-slate-600">
-                    The required documents will be displayed here based on the
-                    information available in the connected scheme dataset.
-                  </p>
-
-                  <div className="mt-6 space-y-3">
-                    {[
-                      "Identity document — placeholder",
-                      "Supporting documents — based on scheme requirements",
-                      "Additional documents where applicable",
-                    ].map((document) => (
-                      <div
-                        key={document}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                      >
-                        <p className="text-sm text-slate-600">
-                          📄 {document}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="mt-6 rounded-xl bg-slate-50 p-5">
+                    <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+                      {scheme.documents ||
+                        "No document information is available in the dataset."}
+                    </p>
                   </div>
                 </div>
               )}
@@ -252,28 +337,11 @@ const SchemeDetailsPage = ({
                     How to Apply
                   </h3>
 
-                  <p className="mt-4 text-sm leading-6 text-slate-600">
-                    Application instructions will be retrieved from the scheme
-                    data during the backend integration stage.
-                  </p>
-
-                  <div className="mt-6 space-y-5">
-                    {[
-                      "Review the available scheme information.",
-                      "Check the eligibility information provided by the relevant authority.",
-                      "Prepare the required documents.",
-                      "Follow the official application process.",
-                    ].map((step, index) => (
-                      <div key={step} className="flex gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#073b6f] text-sm font-bold text-white">
-                          {index + 1}
-                        </div>
-
-                        <p className="pt-1 text-sm leading-6 text-slate-600">
-                          {step}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="mt-6 rounded-xl bg-slate-50 p-5">
+                    <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+                      {scheme.application ||
+                        "No application information is available in the dataset."}
+                    </p>
                   </div>
                 </div>
               )}
@@ -291,31 +359,27 @@ const SchemeDetailsPage = ({
               <div className="mt-5 space-y-4">
                 <SummaryRow
                   label="Scheme"
-                  value={schemeName || "Demo Scheme"}
+                  value={scheme.scheme_name}
                 />
 
                 <SummaryRow
                   label="Category"
-                  value="To be connected"
+                  value={scheme.schemeCategory || "Not specified"}
                 />
 
                 <SummaryRow
                   label="Level"
-                  value="To be connected"
+                  value={scheme.level || "Not specified"}
                 />
 
                 <SummaryRow
                   label="Status"
-                  value="Demo Preview"
+                  value="Information Available"
                 />
               </div>
 
               <button
-                onClick={() =>
-                  alert(
-                    "Official application information will be connected during the backend integration stage."
-                  )
-                }
+                onClick={() => setActiveTab("How to Apply")}
                 className="mt-6 w-full rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
               >
                 Application Information →
@@ -329,22 +393,24 @@ const SchemeDetailsPage = ({
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                GovAssist is designed to help users discover and understand
-                scheme information. It does not guarantee eligibility or
-                represent an official government website.
+                GovAssist helps users discover and understand scheme
+                information. The information shown here does not guarantee
+                eligibility and GovAssist is not an official government
+                website.
               </p>
             </div>
           </aside>
         </div>
       </main>
 
-      {/* Demo Disclaimer */}
+      {/* Disclaimer */}
       <section className="border-t border-[#ead89a] bg-[#fff9df]">
         <div className="mx-auto max-w-7xl px-6 py-5">
           <p className="text-center text-xs leading-5 text-slate-700">
-            <strong>Demo notice:</strong> This page currently contains sample
-            frontend content. Real scheme information will be connected from
-            the GovAssist dataset during the backend integration stage.
+            <strong>Important:</strong> Information displayed on this page is
+            retrieved from the GovAssist scheme dataset. Always verify
+            eligibility, documents, benefits, and application requirements
+            with the relevant official government authority.
           </p>
         </div>
       </section>

@@ -19,8 +19,8 @@ function App() {
   if (page === "schemes") {
     return (
       <SchemesPage
-        onViewDetails={(schemeName) => {
-          setSelectedScheme(schemeName)
+        onViewDetails={(schemeSlug) => {
+          setSelectedScheme(schemeSlug)
           setPage("details")
         }}
       />
@@ -28,7 +28,7 @@ function App() {
   }
 
   if (page === "details") {
-    return <SchemeDetailsPage schemeName={selectedScheme} />
+    return <SchemeDetailsPage schemeSlug={selectedScheme} />
   }
 
   if (page === "ai") {
