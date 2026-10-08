@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 import heroBackground from "../assets/govassist-hero-bg.png"
 
 const emblemUrl =
@@ -20,6 +21,7 @@ const LandingPage = ({
   onLogin: () => void
   user: { id: number; name: string; email: string } | null
 }) => {
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<"profile" | "ai">("profile")
 
   return (
@@ -98,7 +100,8 @@ const LandingPage = ({
   Get Started
 </button>
           </div>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       {/* Hero */}
