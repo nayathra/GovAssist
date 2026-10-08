@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { LanguageSwitcher, useLanguage } from "../i18n"
+import { LanguageSwitcher } from "../i18n"
 
 export type Profile = {
   name: string
@@ -125,7 +125,6 @@ const ProfilePage = ({
 }: {
   onFindSchemes: (profile: Profile) => void
 }) => {
-  const { t } = useLanguage()
   const [profile, setProfile] = useState<Profile>(initialProfile)
 
   const update = (field: keyof Profile, value: string) => {
