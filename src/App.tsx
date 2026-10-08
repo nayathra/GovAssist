@@ -5,15 +5,32 @@ import SchemesPage from "./pages/SchemesPage"
 import SchemeDetailsPage from "./pages/SchemeDetailsPage"
 import AIAssistantPage from "./pages/AIAssistantPage"
 import RecommendationsPage from "./pages/RecommendationsPage"
+import AuthPage from "./pages/AuthPage"
 import type { Profile } from "./pages/ProfilePage"
 
 function App() {
   const [page, setPage] = useState<
-    "landing" | "profile" | "recommendations" | "schemes" | "details" | "ai"
+    "landing" | "auth" | "profile" | "recommendations" | "schemes" | "details" | "ai"
   >("landing")
 
   const [selectedScheme, setSelectedScheme] = useState("")
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(() => {
+    const savedUser = localStorage.getItem("govassist_user")
+    return savedUser ? JSON.parse(savedUser) : null
+  })
+
+  if (page === "auth") {
+    return (
+      <AuthPage
+        onSuccess={(authenticatedUser) => {
+          setUser(authenticatedUser)
+          setPage("profile")
+        }}
+        onBack={() => setPage("landing")}
+      />
+    )
+  }
 
   if (page === "profile") {
     return (
@@ -60,6 +77,8 @@ function App() {
 
   return (
     <LandingPage
+      user={user}
+      onLogin={() => setPage("auth")}
       onGetStarted={() => setPage("profile")}
       onExploreSchemes={() => setPage("schemes")}
       onAskAI={() => setPage("ai")}
