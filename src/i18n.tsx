@@ -72,7 +72,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     disclaimer: "GovAssist is a student project for discovering and explaining government-scheme information. It is not an official Government of India website. Recommendations are only potentially relevant matches based on available data and should be verified with the concerned official department or scheme portal before applying.",
     footerDesc: "A student-built platform to make government scheme information easier to discover, search and understand.",
     project: "Project",
-    academic: "Academic / student project."
+    academic: "Academic / student project.",
     welcomeToGovAssist: "Welcome to GovAssist",
     discoverEasier: "Discover schemes made easier.",
     createAccountDesc: "Create your GovAssist account to keep your profile and continue exploring potentially relevant government schemes.",
@@ -164,7 +164,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     disclaimer: "GovAssist என்பது அரசுத் திட்டத் தகவல்களைக் கண்டறிந்து விளக்குவதற்கான மாணவர் திட்டமாகும். இது இந்திய அரசின் அதிகாரப்பூர்வ இணையதளம் அல்ல. பரிந்துரைகள் கிடைக்கும் தரவின் அடிப்படையிலான சாத்தியமான பொருத்தங்கள் மட்டுமே; விண்ணப்பிப்பதற்கு முன் சம்பந்தப்பட்ட அதிகாரப்பூர்வ துறை அல்லது திட்ட இணையதளத்தில் சரிபார்க்கவும்.",
     footerDesc: "அரசுத் திட்டத் தகவல்களை எளிதாகக் கண்டறிந்து, தேடி, புரிந்துகொள்ள உதவும் மாணவர்களால் உருவாக்கப்பட்ட தளம்.",
     project: "திட்டம்",
-    academic: "© 2026 GovAssist. கல்வி / மாணவர் திட்டம்."
+    academic: "© 2026 GovAssist. கல்வி / மாணவர் திட்டம்.",
     welcomeToGovAssist: "GovAssist-க்கு வரவேற்கிறோம்",
     discoverEasier: "திட்டங்களைக் கண்டறிவது இப்போது எளிது.",
     createAccountDesc: "உங்கள் சுயவிவரத்தை சேமித்து, பொருத்தமாக இருக்கக்கூடிய அரசுத் திட்டங்களைத் தொடர்ந்து ஆராய GovAssist கணக்கை உருவாக்குங்கள்.",
@@ -256,7 +256,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     disclaimer: "GovAssist ప్రభుత్వ పథకాల సమాచారాన్ని కనుగొని వివరించడానికి రూపొందించిన విద్యార్థి ప్రాజెక్ట్. ఇది భారత ప్రభుత్వ అధికారిక వెబ్‌సైట్ కాదు. సిఫార్సులు అందుబాటులో ఉన్న డేటా ఆధారంగా సంభావ్యంగా సంబంధిత సరిపోలికలు మాత్రమే; దరఖాస్తు చేయడానికి ముందు సంబంధిత అధికారిక విభాగం లేదా పథకం పోర్టల్‌లో ధృవీకరించండి.",
     footerDesc: "ప్రభుత్వ పథకాల సమాచారాన్ని సులభంగా కనుగొని, శోధించి, అర్థం చేసుకోవడానికి విద్యార్థులు రూపొందించిన వేదిక.",
     project: "ప్రాజెక్ట్",
-    academic: "© 2026 GovAssist. విద్యా / విద్యార్థి ప్రాజెక్ట్."
+    academic: "© 2026 GovAssist. విద్యా / విద్యార్థి ప్రాజెక్ట్.",
     welcomeToGovAssist: "GovAssistకి స్వాగతం",
     discoverEasier: "పథకాలను కనుగొనడం ఇప్పుడు సులభం.",
     createAccountDesc: "మీ ప్రొఫైల్‌ను భద్రపరచి, మీకు సంబంధించి ఉండే ప్రభుత్వ పథకాలను కొనసాగిస్తూ అన్వేషించడానికి GovAssist ఖాతాను సృష్టించండి.",
