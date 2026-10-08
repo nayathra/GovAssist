@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 
 const API_BASE_URL = "http://127.0.0.1:8000"
 
@@ -14,6 +15,7 @@ type AuthPageProps = {
 }
 
 const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
+  const { t } = useLanguage()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -80,7 +82,8 @@ const AuthPage = ({ onSuccess, onBack }: AuthPageProps) => {
           >
             ← Back
           </button>
-        </div>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       <main className="flex min-h-[calc(100vh-105px)] items-center justify-center px-5 py-12">
