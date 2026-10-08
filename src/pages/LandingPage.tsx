@@ -10,13 +10,13 @@ const parliamentUrl =
 
 const LandingPage = ({
   onGetStarted,
-  onExploreSchemes,
+  onExplore{t("schemes")},
   onAskAI,
   onLogin,
   user,
 }: {
   onGetStarted: () => void
-  onExploreSchemes: () => void
+  onExplore{t("schemes")}: () => void
   onAskAI: () => void
   onLogin: () => void
   user: { id: number; name: string; email: string } | null
@@ -64,25 +64,25 @@ const LandingPage = ({
 
           <nav className="hidden items-center gap-7 lg:flex">
             <a href="#" className="text-sm font-semibold text-[#073b6f]">
-              Home
+              {t("home")}
             </a>
             <a
               href="#how-it-works"
               className="text-sm font-medium text-slate-600 hover:text-[#073b6f]"
             >
-              How It Works
+              {t("howItWorks")}
             </a>
             <a
               href="#schemes"
               className="text-sm font-medium text-slate-600 hover:text-[#073b6f]"
             >
-              Schemes
+              {t("schemes")}
             </a>
             <a
               href="#about"
               className="text-sm font-medium text-slate-600 hover:text-[#073b6f]"
             >
-              About
+              {t("about")}
             </a>
           </nav>
 
@@ -97,7 +97,7 @@ const LandingPage = ({
   onClick={onGetStarted}
   className="rounded-lg bg-[#073b6f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#062f59]"
 >
-  Get Started
+  {t("getStarted")}
 </button>
           </div>
         <LanguageSwitcher />
@@ -142,13 +142,13 @@ const LandingPage = ({
   onClick={onGetStarted}
   className="rounded-lg bg-[#073b6f] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#073b6f]/15 transition hover:-translate-y-0.5 hover:bg-[#062f59]"
 >
-  Get Started
+  {t("getStarted")}
 </button>
               <button
-                onClick={onExploreSchemes}
+                onClick={onExplore{t("schemes")}}
                 className="rounded-lg border border-[#9fb5ca] bg-white/90 px-6 py-3.5 text-sm font-bold text-[#073b6f] backdrop-blur transition hover:bg-white"
               >
-                Explore Schemes
+                Explore {t("schemes")}
               </button>
             </div>
 
@@ -221,7 +221,7 @@ const LandingPage = ({
                         {t("potentiallyRelevant")}
                       </p>
                       <p className="mt-1 text-sm font-bold text-[#102a43]">
-                        {t("educationStudentSchemes")}
+                        {t("educationStudent{t("schemes")}")}
                       </p>
                       <p className="mt-2 text-xs leading-5 text-slate-500">
                         Recommendations are based on the profile information
@@ -231,7 +231,7 @@ const LandingPage = ({
                   </div>
 
                   <button className="mt-5 w-full rounded-lg bg-[#0f8a5f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0b744f]">
-                    View {t("potentiallyRelevant")} Schemes
+                    View {t("potentiallyRelevant")} {t("schemes")}
                   </button>
                 </div>
               ) : (
