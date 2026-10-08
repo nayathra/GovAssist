@@ -394,4 +394,3 @@ def get_recommendations(profile: ProfileRequest):
         "recommendations": recommendations[:12],
         "disclaimer": "These are potentially relevant schemes based on profile signals found in the available scheme data. This does not determine or guarantee official eligibility.",
     }
-}
