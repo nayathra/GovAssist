@@ -32,43 +32,7 @@ const AIAssistantPage = ({
 }) => {
   const { t } = useLanguage()
   const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      type: "ai",
-      text: "Hello! I'm GovAssist AI. I can help you understand government scheme information available in the GovAssist database. What would you like to know?",
-    },
-    {
-      id: 2,
-      type: "user",
-      text: "What schemes may be relevant for students?",
-    },
-    {
-      id: 3,
-      type: "ai",
-      text: "GovAssist can help identify schemes that may be relevant to students based on information available in the scheme database. You can provide details such as your state, education level, student status, and other profile information to explore potentially relevant schemes.",
-    },
-    {
-      id: 4,
-      type: "user",
-      text: "What information should I check before applying for a scheme?",
-    },
-    {
-      id: 5,
-      type: "ai",
-      text: "You should review the scheme's eligibility information, benefits, required documents, application process, and the relevant authority or official source. GovAssist will present this information from the available scheme data.",
-    },
-    {
-      id: 6,
-      type: "user",
-      text: "Can you tell me if I am eligible?",
-    },
-    {
-      id: 7,
-      type: "ai",
-      text: "I can help you understand the eligibility information available for a scheme, but GovAssist does not guarantee official eligibility. Final eligibility should be verified using the relevant official scheme information.",
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
 
   const handleSend = async (messageText?: string) => {
     const text = (messageText ?? input).trim()
@@ -118,13 +82,8 @@ const AIAssistantPage = ({
   }
 
   const handleClearChat = () => {
-    setMessages([
-      {
-        id: Date.now(),
-        type: "ai",
-        text: "Hello! I'm GovAssist AI. I can help you understand government scheme information available in the GovAssist database. What would you like to know?",
-      },
-    ])
+    setMessages([])
+    setInput("")
   }
 
   return (
@@ -152,14 +111,16 @@ const AIAssistantPage = ({
             </div>
           </div>
 
-          <button
-            onClick={() => window.history.back()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            {t("back")}
-          </button>
-        <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.history.back()}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {t("back")}
+            </button>
+            <LanguageSwitcher />
           </div>
+        </div>
       </header>
 
       {/* Main content */}
@@ -213,42 +174,46 @@ const AIAssistantPage = ({
             </button>
           </div>
 
-          {/* Compact conversation area */}
-          <div className="min-h-0 max-h-[360px] w-full space-y-3 overflow-y-auto bg-[#f8fafc] p-4 md:p-5">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.type === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+          {/* Conversation area */}
+          <div className="min-h-[120px] max-h-[360px] w-full space-y-3 overflow-y-auto bg-[#f8fafc] p-4 md:p-5">
+            {messages.length === 0 ? (
+              <div className="flex min-h-[120px] items-center justify-center text-center">
+                <p className="text-xs text-slate-400">
+                  Ask a question about government schemes to start the conversation.
+                </p>
+              </div>
+            ) : (
+              messages.map((message) => (
                 <div
-                  className={`flex max-w-[90%] items-start gap-2 ${
-                    message.type === "user" ? "flex-row-reverse" : ""
-                  }`}
+                  key={message.id}
+                  className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] ${
-                      message.type === "user"
-                        ? "bg-[#073b6f] text-white"
-                        : "bg-[#eaf7f2]"
-                    }`}
+                    className={`flex max-w-[90%] items-start gap-2 ${message.type === "user" ? "flex-row-reverse" : ""}`}
                   >
-                    {message.type === "user" ? "You" : "🤖"}
-                  </div>
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] ${
+                        message.type === "user"
+                          ? "bg-[#073b6f] text-white"
+                          : "bg-[#eaf7f2]"
+                      }`}
+                    >
+                      {message.type === "user" ? "You" : "🤖"}
+                    </div>
 
-                  <div
-                    className={`rounded-2xl px-3 py-2 text-xs leading-5 ${
-                      message.type === "user"
-                        ? "rounded-tr-sm bg-[#073b6f] text-white"
-                        : "rounded-tl-sm border border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    {message.text}
+                    <div
+                      className={`rounded-2xl px-3 py-2 text-xs leading-5 ${
+                        message.type === "user"
+                          ? "rounded-tr-sm bg-[#073b6f] text-white"
+                          : "rounded-tl-sm border border-slate-200 bg-white text-slate-700"
+                      }`}
+                    >
+                      {message.text}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Suggested questions */}
@@ -289,7 +254,7 @@ const AIAssistantPage = ({
 
               <button
                 onClick={() => handleSend()}
-                className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59]"
+                className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59)"
               >
                 {t("send")}
               </button>
@@ -306,9 +271,8 @@ const AIAssistantPage = ({
           <p className="text-center text-[10px] leading-4 text-slate-700">
             <strong>Important:</strong> GovAssist AI is designed to explain
             information available in the scheme database. It does not
-            guarantee eligibility. In the backend stage, responses will be
-            generated using retrieved scheme information rather than invented
-            facts.
+            guarantee eligibility. Responses are grounded in retrieved scheme
+            information from the available scheme database.
           </p>
         </div>
       </main>
