@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 import type { Profile } from "./ProfilePage"
 
 type Recommendation = {
@@ -26,6 +27,7 @@ const RecommendationsPage = ({
   onViewDetails: (slug: string) => void
   onExploreSchemes: () => void
 }) => {
+  const { t } = useLanguage()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -64,8 +66,9 @@ const RecommendationsPage = ({
             <div className="text-xl font-extrabold tracking-tight text-[#073b6f]">Gov<span className="text-[#0f8a5f]">Assist</span></div>
             <p className="text-xs font-medium text-slate-500">Potentially Relevant Scheme Discovery</p>
           </div>
-          <button onClick={() => window.history.back()} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50">← Back</button>
-        </div>
+          <button onClick={() => window.history.back()} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50">{t("back")}</button>
+        <LanguageSwitcher />
+          </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-10 sm:py-14">
@@ -143,7 +146,7 @@ const RecommendationsPage = ({
         )}
 
         <div className="mt-10 rounded-2xl border border-[#ead7a0] bg-[#fff8df] p-5">
-          <p className="text-sm font-extrabold text-[#6b5410]">Important</p>
+          <p className="text-sm font-extrabold text-[#6b5410]">{t("important")}</p>
           <p className="mt-1 text-xs leading-5 text-[#705f28] sm:text-sm">GovAssist only surfaces potentially relevant schemes using the available dataset. It does not determine official eligibility. Always verify the complete requirements with the relevant government authority.</p>
         </div>
       </main>
