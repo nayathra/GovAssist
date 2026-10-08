@@ -50,7 +50,7 @@ const SchemeDetailsPage = ({
         )
 
         if (!response.ok) {
-          throw new Error("{t("schemeNotFound")}")
+          throw new Error(t("schemeNotFound"))
         }
 
         const data = await response.json()
