@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import type { Profile } from "./ProfilePage"
 
 type DashboardProps = {
@@ -9,6 +10,7 @@ type DashboardProps = {
   onAI: () => void
   onHome: () => void
   onLogout: () => void
+  onViewScheme: (schemeSlug: string) => void
 }
 
 const DashboardPage = ({
@@ -20,6 +22,7 @@ const DashboardPage = ({
   onAI,
   onHome,
   onLogout,
+  onViewScheme,
 }: DashboardProps) => {
   const profileComplete = Boolean(profile?.name && profile?.age && profile?.state && profile?.occupation)
 
@@ -185,6 +188,8 @@ const DashboardPage = ({
           </div>
         </section>
 
+        <RecentlyViewed onViewScheme={onViewScheme} />
+
         <section className="mt-6 rounded-2xl border border-[#ead7a0] bg-[#fff8df] p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-[#6b5410]">
             Important
@@ -206,3 +211,85 @@ const DashboardPage = ({
 }
 
 export default DashboardPage
+
+
+type RecentScheme = {
+  scheme_name: string
+  slug: string
+  level: string
+  schemeCategory: string
+  viewedAt: string
+}
+
+const RecentlyViewed = ({
+  onViewScheme,
+}: {
+  onViewScheme: (schemeSlug: string) => void
+}) => {
+  const [items, setItems] = useState<RecentScheme[]>([])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("govassist_recent_schemes")
+      setItems(saved ? JSON.parse(saved) : [])
+    } catch {
+      setItems([])
+    }
+  }, [])
+
+  if (!items.length) {
+    return (
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f8a5f]">
+          Recent Activity
+        </p>
+        <h2 className="mt-1 text-2xl font-extrabold text-[#102a43]">
+          Recently Viewed Schemes
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Schemes you open will appear here so you can quickly return to them.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="mt-8">
+      <div className="mb-4">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f8a5f]">
+          Recent Activity
+        </p>
+        <h2 className="mt-1 text-2xl font-extrabold text-[#102a43]">
+          Recently Viewed Schemes
+        </h2>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.map((item) => (
+          <button
+            key={item.slug}
+            onClick={() => onViewScheme(item.slug)}
+            className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#b8cde0] hover:shadow-md"
+          >
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-[#eaf7f2] px-2.5 py-1 text-[10px] font-bold text-[#07845b]">
+                {item.schemeCategory || "General"}
+              </span>
+              <span className="rounded-full bg-[#eef4fb] px-2.5 py-1 text-[10px] font-bold text-[#073b6f]">
+                {item.level || "Scheme"}
+              </span>
+            </div>
+
+            <h3 className="mt-4 line-clamp-2 text-sm font-extrabold leading-5 text-[#102a43]">
+              {item.scheme_name}
+            </h3>
+
+            <p className="mt-3 text-xs font-bold text-[#073b6f]">
+              View Details →
+            </p>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
