@@ -176,7 +176,7 @@ const SchemesPage = ({
 
               <input
                 type="text"
-                placeholder="{t("search")}"
+                placeholder={t("search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
@@ -268,7 +268,7 @@ const SchemesPage = ({
                     </p>
 
                     <p className="mt-1 text-sm font-medium text-slate-700">
-                      {scheme.benefits || "{t("benefitsAvailable")}"}
+                      {scheme.benefits || t("benefitsAvailable")}
                     </p>
                   </div>
 
