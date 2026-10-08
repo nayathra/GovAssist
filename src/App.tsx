@@ -9,7 +9,7 @@ import AuthPage from "./pages/AuthPage"
 import DashboardPage from "./pages/DashboardPage"
 import type { Profile } from "./pages/ProfilePage"
 
-function App() {
+function AppContent() {
   const [page, setPage] = useState<
     "landing" | "auth" | "dashboard" | "profile" | "recommendations" | "schemes" | "details" | "ai"
   >("landing")
