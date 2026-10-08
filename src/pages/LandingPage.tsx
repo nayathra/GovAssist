@@ -5,9 +5,6 @@ import heroBackground from "../assets/govassist-hero-bg.png"
 const emblemUrl =
   "https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg"
 
-const parliamentUrl =
-  "https://upload.wikimedia.org/wikipedia/commons/c/ca/Glimpses_of_the_new_Parliament_Building%2C_in_New_Delhi_%282%29.jpg"
-
 const LandingPage = ({
   onGetStarted,
   onExploreSchemes,
