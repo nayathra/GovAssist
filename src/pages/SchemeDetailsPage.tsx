@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { LanguageSwitcher, useLanguage } from "../i18n"
 
 type Scheme = {
   scheme_name: string
@@ -19,189 +20,23 @@ type SchemeDetailsPageProps = {
 
 const API_BASE_URL = "http://127.0.0.1:8000"
 
-const translations: Record<string, Record<string, string>> = {
-  English: {
-    back: "← Back to Schemes",
-    overview: "Overview",
-    eligibility: "Eligibility",
-    benefits: "Benefits",
-    documents: "Documents",
-    howToApply: "How to Apply",
-    schemeOverview: "Scheme Overview",
-    schemeName: "Scheme Name",
-    schemeCategory: "Scheme Category",
-    schemeLevel: "Scheme Level",
-    source: "Information Source",
-    tags: "Tags",
-    eligibilityInfo: "Eligibility Information",
-    important: "Important",
-    requiredDocuments: "Required Documents",
-    noInfo: "No information is available in the dataset.",
-    schemeSummary: "Scheme Summary",
-    scheme: "Scheme",
-    status: "Status",
-    informationAvailable: "Information Available",
-    applicationInfo: "Application Information →",
-    importantInfo: "Important Information",
-    language: "Language",
-    languageNote: "Scheme information is currently shown from the available dataset. Interface labels are translated.",
-    sourceName: "GovAssist Scheme Dataset",
-  },
-  Tamil: {
-    back: "← திட்டங்களுக்குத் திரும்பு",
-    overview: "கண்ணோட்டம்",
-    eligibility: "தகுதி",
-    benefits: "நன்மைகள்",
-    documents: "தேவையான ஆவணங்கள்",
-    howToApply: "எப்படி விண்ணப்பிப்பது",
-    schemeOverview: "திட்டத்தின் கண்ணோட்டம்",
-    schemeName: "திட்டத்தின் பெயர்",
-    schemeCategory: "திட்ட வகை",
-    schemeLevel: "திட்ட நிலை",
-    source: "தகவல் மூலம்",
-    tags: "குறிச்சொற்கள்",
-    eligibilityInfo: "தகுதி தகவல்",
-    important: "முக்கியம்",
-    requiredDocuments: "தேவையான ஆவணங்கள்",
-    noInfo: "தரவுத்தொகுப்பில் தகவல் இல்லை.",
-    schemeSummary: "திட்ட சுருக்கம்",
-    scheme: "திட்டம்",
-    status: "நிலை",
-    informationAvailable: "தகவல் கிடைக்கிறது",
-    applicationInfo: "விண்ணப்பத் தகவல் →",
-    importantInfo: "முக்கிய தகவல்",
-    language: "மொழி",
-    languageNote: "திட்டத் தகவல் தற்போது கிடைக்கக்கூடிய தரவுத்தொகுப்பிலிருந்து காட்டப்படுகிறது. இடைமுக உரைகள் மொழிபெயர்க்கப்பட்டுள்ளன.",
-    sourceName: "GovAssist திட்டத் தரவுத்தொகுப்பு",
-  },
-  Telugu: {
-    back: "← పథకాలకు తిరిగి వెళ్లండి",
-    overview: "అవలోకనం",
-    eligibility: "అర్హత",
-    benefits: "ప్రయోజనాలు",
-    documents: "అవసరమైన పత్రాలు",
-    howToApply: "ఎలా దరఖాస్తు చేయాలి",
-    schemeOverview: "పథకం అవలోకనం",
-    schemeName: "పథకం పేరు",
-    schemeCategory: "పథకం వర్గం",
-    schemeLevel: "పథకం స్థాయి",
-    source: "సమాచార మూలం",
-    tags: "ట్యాగ్‌లు",
-    eligibilityInfo: "అర్హత సమాచారం",
-    important: "ముఖ్యమైనది",
-    requiredDocuments: "అవసరమైన పత్రాలు",
-    noInfo: "డేటాసెట్‌లో సమాచారం అందుబాటులో లేదు.",
-    schemeSummary: "పథకం సారాంశం",
-    scheme: "పథకం",
-    status: "స్థితి",
-    informationAvailable: "సమాచారం అందుబాటులో ఉంది",
-    applicationInfo: "దరఖాస్తు సమాచారం →",
-    importantInfo: "ముఖ్యమైన సమాచారం",
-    language: "భాష",
-    languageNote: "పథకం సమాచారం ప్రస్తుతం అందుబాటులో ఉన్న డేటాసెట్ నుండి చూపబడుతోంది. ఇంటర్‌ఫేస్ లేబుల్‌లు అనువదించబడ్డాయి.",
-    sourceName: "GovAssist పథకాల డేటాసెట్",
-  },
-  Hindi: {
-    back: "← योजनाओं पर वापस जाएँ",
-    overview: "सारांश",
-    eligibility: "पात्रता",
-    benefits: "लाभ",
-    documents: "आवश्यक दस्तावेज़",
-    howToApply: "आवेदन कैसे करें",
-    schemeOverview: "योजना का सारांश",
-    schemeName: "योजना का नाम",
-    schemeCategory: "योजना श्रेणी",
-    schemeLevel: "योजना स्तर",
-    source: "जानकारी का स्रोत",
-    tags: "टैग",
-    eligibilityInfo: "पात्रता जानकारी",
-    important: "महत्वपूर्ण",
-    requiredDocuments: "आवश्यक दस्तावेज़",
-    noInfo: "डेटासेट में जानकारी उपलब्ध नहीं है।",
-    schemeSummary: "योजना सारांश",
-    scheme: "योजना",
-    status: "स्थिति",
-    informationAvailable: "जानकारी उपलब्ध है",
-    applicationInfo: "आवेदन की जानकारी →",
-    importantInfo: "महत्वपूर्ण जानकारी",
-    language: "भाषा",
-    languageNote: "योजना की जानकारी फिलहाल उपलब्ध डेटासेट से दिखाई जा रही है। इंटरफ़ेस लेबल का अनुवाद किया गया है।",
-    sourceName: "GovAssist योजना डेटासेट",
-  },
-  Malayalam: {
-    back: "← പദ്ധതികളിലേക്ക് മടങ്ങുക",
-    overview: "അവലോകനം",
-    eligibility: "യോഗ്യത",
-    benefits: "ആനുകൂല്യങ്ങൾ",
-    documents: "ആവശ്യമായ രേഖകൾ",
-    howToApply: "എങ്ങനെ അപേക്ഷിക്കാം",
-    schemeOverview: "പദ്ധതി അവലോകനം",
-    schemeName: "പദ്ധതിയുടെ പേര്",
-    schemeCategory: "പദ്ധതി വിഭാഗം",
-    schemeLevel: "പദ്ധതി നില",
-    source: "വിവര സ്രോതസ്സ്",
-    tags: "ടാഗുകൾ",
-    eligibilityInfo: "യോഗ്യതാ വിവരങ്ങൾ",
-    important: "പ്രധാനപ്പെട്ടത്",
-    requiredDocuments: "ആവശ്യമായ രേഖകൾ",
-    noInfo: "ഡാറ്റാസെറ്റിൽ വിവരങ്ങൾ ലഭ്യമല്ല.",
-    schemeSummary: "പദ്ധതി സംഗ്രഹം",
-    scheme: "പദ്ധതി",
-    status: "നില",
-    informationAvailable: "വിവരം ലഭ്യമാണ്",
-    applicationInfo: "അപേക്ഷാ വിവരങ്ങൾ →",
-    importantInfo: "പ്രധാനപ്പെട്ട വിവരങ്ങൾ",
-    language: "ഭാഷ",
-    languageNote: "പദ്ധതി വിവരങ്ങൾ നിലവിൽ ലഭ്യമായ ഡാറ്റാസെറ്റിൽ നിന്നാണ് കാണിക്കുന്നത്. ഇന്റർഫേസ് ലേബലുകൾ വിവർത്തനം ചെയ്തിട്ടുണ്ട്.",
-    sourceName: "GovAssist പദ്ധതി ഡാറ്റാസെറ്റ്",
-  },
-  Kannada: {
-    back: "← ಯೋಜನೆಗಳಿಗೆ ಹಿಂತಿರುಗಿ",
-    overview: "ಅವಲೋಕನ",
-    eligibility: "ಅರ್ಹತೆ",
-    benefits: "ಪ್ರಯೋಜನಗಳು",
-    documents: "ಅಗತ್ಯ ದಾಖಲೆಗಳು",
-    howToApply: "ಅರ್ಜಿ ಸಲ್ಲಿಸುವುದು ಹೇಗೆ",
-    schemeOverview: "ಯೋಜನೆಯ ಅವಲೋಕನ",
-    schemeName: "ಯೋಜನೆಯ ಹೆಸರು",
-    schemeCategory: "ಯೋಜನೆ ವರ್ಗ",
-    schemeLevel: "ಯೋಜನೆ ಮಟ್ಟ",
-    source: "ಮಾಹಿತಿ ಮೂಲ",
-    tags: "ಟ್ಯಾಗ್‌ಗಳು",
-    eligibilityInfo: "ಅರ್ಹತಾ ಮಾಹಿತಿ",
-    important: "ಪ್ರಮುಖ",
-    requiredDocuments: "ಅಗತ್ಯ ದಾಖಲೆಗಳು",
-    noInfo: "ಡೇಟಾಸೆಟ್‌ನಲ್ಲಿ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ.",
-    schemeSummary: "ಯೋಜನೆ ಸಾರಾಂಶ",
-    scheme: "ಯೋಜನೆ",
-    status: "ಸ್ಥಿತಿ",
-    informationAvailable: "ಮಾಹಿತಿ ಲಭ್ಯವಿದೆ",
-    applicationInfo: "ಅರ್ಜಿ ಮಾಹಿತಿ →",
-    importantInfo: "ಪ್ರಮುಖ ಮಾಹಿತಿ",
-    language: "ಭಾಷೆ",
-    languageNote: "ಯೋಜನೆಯ ಮಾಹಿತಿಯನ್ನು ಪ್ರಸ್ತುತ ಲಭ್ಯವಿರುವ ಡೇಟಾಸೆಟ್‌ನಿಂದ ತೋರಿಸಲಾಗುತ್ತಿದೆ. ಇಂಟರ್ಫೇಸ್ ಲೇಬಲ್‌ಗಳನ್ನು ಅನುವಾದಿಸಲಾಗಿದೆ.",
-    sourceName: "GovAssist ಯೋಜನೆ ಡೇಟಾಸೆಟ್",
-  },
-}
-
 
 const SchemeDetailsPage = ({
   schemeSlug,
 }: SchemeDetailsPageProps) => {
   const [activeTab, setActiveTab] = useState("Overview")
-  const [language, setLanguage] = useState("English")
   const [scheme, setScheme] = useState<Scheme | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  const t = translations[language] || translations.English
+  const { t } = useLanguage()
 
   const tabs = [
-    { key: "Overview", label: t.overview },
-    { key: "Eligibility", label: t.eligibility },
-    { key: "Benefits", label: t.benefits },
-    { key: "Documents", label: t.documents },
-    { key: "How to Apply", label: t.howToApply },
+    { key: "Overview", label: t("overview") },
+    { key: "Eligibility", label: t("eligibility") },
+    { key: "Benefits", label: t("benefits") },
+    { key: "Documents", label: t("documents") },
+    { key: "How to Apply", label: t("howToApply") },
   ]
 
   useEffect(() => {
@@ -338,27 +173,12 @@ const SchemeDetailsPage = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="hidden text-xs font-semibold text-slate-500 sm:block">
-              {t.language}
-            </label>
-            <select
-              value={language}
-              onChange={(event) => {
-                setLanguage(event.target.value)
-                setActiveTab("Overview")
-              }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-[#073b6f]"
-              aria-label={t.language}
-            >
-              {Object.keys(translations).map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <button
+            <LanguageSwitcher />
+                        <button
               onClick={() => window.history.back()}
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              {t.back}
+              {t("back")}
             </button>
           </div>
         </div>
@@ -420,7 +240,7 @@ const SchemeDetailsPage = ({
               {activeTab === "Overview" && (
                 <div>
                   <h3 className="text-xl font-bold text-[#073b6f]">
-                    {t.schemeOverview}
+                    {t("schemeOverview")}
                   </h3>
 
                   <p className="mt-4 whitespace-pre-line leading-7 text-slate-600">
@@ -429,22 +249,22 @@ const SchemeDetailsPage = ({
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2">
                     <InfoBox
-                      label={t.schemeName}
+                      label={t("schemeName")}
                       value={scheme.scheme_name}
                     />
 
                     <InfoBox
-                      label={t.schemeCategory}
+                      label={t("schemeCategory")}
                       value={scheme.schemeCategory || "Not specified"}
                     />
 
                     <InfoBox
-                      label={t.schemeLevel}
+                      label={t("schemeLevel")}
                       value={scheme.level || "Not specified"}
                     />
 
                     <InfoBox
-                      label={t.source}
+                      label={t("source")}
                       value="GovAssist Scheme Dataset"
                     />
                   </div>
@@ -452,7 +272,7 @@ const SchemeDetailsPage = ({
                   {scheme.tags && (
                     <div className="mt-8">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {t.tags}
+                        {t("tags")}
                       </p>
 
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -483,7 +303,7 @@ const SchemeDetailsPage = ({
 
                   <div className="mt-6 rounded-xl bg-[#f7f9fc] p-5">
                     <p className="text-sm font-semibold text-slate-700">
-                      {t.eligibilityInfo}
+                      {t("eligibilityInfo")}
                     </p>
 
                     <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
@@ -527,7 +347,7 @@ const SchemeDetailsPage = ({
               {activeTab === "Documents" && (
                 <div>
                   <h3 className="text-xl font-bold text-[#073b6f]">
-                    {t.requiredDocuments}
+                    {t("requiredDocuments")}
                   </h3>
 
                   <div className="mt-6 rounded-xl bg-slate-50 p-5">
@@ -551,13 +371,13 @@ const SchemeDetailsPage = ({
                       <ApplicationSteps application={scheme.application} />
                     ) : (
                       <div className="rounded-xl bg-slate-50 p-5">
-                        <p className="text-sm leading-7 text-slate-600">{t.noInfo}</p>
+                        <p className="text-sm leading-7 text-slate-600">{t("noInfo")}</p>
                       </div>
                     )}
                   </div>
 
                   <div className="mt-5 rounded-xl border border-[#cfe2d9] bg-[#eef9f4] p-4">
-                    <p className="text-xs leading-5 text-slate-600">{t.languageNote}</p>
+                    <p className="text-xs leading-5 text-slate-600">{t("languageNote")}</p>
                   </div>
                 </div>
               )}
@@ -569,28 +389,28 @@ const SchemeDetailsPage = ({
             {/* Summary */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-bold text-[#073b6f]">
-                {t.schemeSummary}
+                {t("schemeSummary")}
               </h3>
 
               <div className="mt-5 space-y-4">
                 <SummaryRow
-                  label={t.scheme}
+                  label={t("scheme")}
                   value={scheme.scheme_name}
                 />
 
                 <SummaryRow
-                  label={t.schemeCategory}
+                  label={t("schemeCategory")}
                   value={scheme.schemeCategory || "Not specified"}
                 />
 
                 <SummaryRow
-                  label={t.schemeLevel}
+                  label={t("schemeLevel")}
                   value={scheme.level || "Not specified"}
                 />
 
                 <SummaryRow
-                  label={t.status}
-                  value={t.informationAvailable}
+                  label={t("status")}
+                  value={t("informationAvailable")}
                 />
               </div>
 
@@ -598,14 +418,14 @@ const SchemeDetailsPage = ({
                 onClick={() => setActiveTab("How to Apply")}
                 className="mt-6 w-full rounded-xl bg-[#073b6f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
               >
-                {t.applicationInfo}
+                {t("applicationInfo")}
               </button>
             </div>
 
-            {/* {t.importantInfo} */}
+            {/* {t("importantInfo")} */}
             <div className="rounded-2xl border border-[#ead89a] bg-[#fff9df] p-6">
               <h3 className="font-bold text-slate-800">
-                {t.importantInfo}
+                {t("importantInfo")}
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-600">
