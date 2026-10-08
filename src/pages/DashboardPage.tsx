@@ -1,4 +1,4 @@
-import { useEffect, use{t("state")} } from "react"
+import { useEffect, useState } from "react"
 import { LanguageSwitcher, useLanguage } from "../i18n"
 import type { Profile } from "./ProfilePage"
 
@@ -78,24 +78,24 @@ const DashboardPage = ({
                   {t("profile")}
                 </p>
                 <h2 className="mt-2 text-xl font-extrabold text-[#102a43]">
-                  {profileComplete ? "{t("profile{t("ready")}")}" : "{t("completeProfile")}"}
+                  {profileComplete ? t("profileReady") : t("completeProfile")}
                 </h2>
               </div>
               <button
                 onClick={onProfile}
                 className="rounded-lg border border-[#b8cde0] px-3 py-2 text-xs font-bold text-[#073b6f] hover:bg-[#f2f7fb]"
               >
-                {profileComplete ? "{t("editProfile")}" : "{t("createProfile")}"}
+                {profileComplete ? t("editProfile") : t("createProfile")}
               </button>
             </div>
 
             {profileComplete ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-4">
                 {[
-                  ["{t("state")}", profile?.state],
-                  ["{t("occupation")}", profile?.occupation],
-                  ["{t("age")}", profile?.age],
-                  ["{t("student")}", profile?.studentStatus || "Not specified"],
+                  [t("state"), profile?.state],
+                  [t("occupation"), profile?.occupation],
+                  [t("age"), profile?.age],
+                  [t("student"), profile?.studentStatus || "Not specified"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl bg-[#f7f9fc] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
@@ -121,10 +121,10 @@ const DashboardPage = ({
               </div>
               <div>
                 <p className="text-lg font-extrabold text-[#102a43]">
-                  {profileComplete ? "{t("ready")}" : "{t("incomplete")}"}
+                  {profileComplete ? t("ready") : t("incomplete")}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {profileComplete ? "{t("canExploreRecommendations")}" : "{t("completeProfile")} first."}
+                  {profileComplete ? t("canExploreRecommendations") : t("completeProfileFirst")}
                 </p>
               </div>
             </div>
@@ -144,29 +144,29 @@ const DashboardPage = ({
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                title: "{t("recommendations")}",
-                text: "{t("recommendationDesc")}",
+                title: t("recommendations"),
+                text: t("recommendationDesc"),
                 icon: "01",
                 action: onRecommendations,
                 disabled: !profileComplete,
               },
               {
-                title: "{t("exploreSchemes")}",
-                text: "{t("exploreDesc")}",
+                title: t("exploreSchemes"),
+                text: t("exploreDesc"),
                 icon: "02",
                 action: onSchemes,
                 disabled: false,
               },
               {
-                title: "{t("aiAssistant")}",
-                text: "{t("aiDesc")}",
+                title: t("aiAssistant"),
+                text: t("aiDesc"),
                 icon: "03",
                 action: onAI,
                 disabled: false,
               },
               {
-                title: "{t("updateProfile")}",
-                text: "{t("updateDesc")}",
+                title: t("updateProfile"),
+                text: t("updateDesc"),
                 icon: "04",
                 action: onProfile,
                 disabled: false,
