@@ -367,15 +367,13 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                         age_ranges.append((minimum, maximum))
 
             if age_ranges and not any(minimum <= age <= maximum for minimum, maximum in age_ranges):
-                minimum = min(item[0] for item in age_ranges)
-                maximum = max(item[1] for item in age_ranges)
-                warnings.append(
-                    f"The stated age range(s) do not clearly include profile age {age}; verify the exact category-specific age rule."
+                ranges_text = ", ".join(
+                    f"{minimum}–{maximum}"
+                    for minimum, maximum in age_ranges
                 )
-                if age < minimum or age > maximum:
-                    conflicts.append(
-                        f"Profile age {age} is outside the stated age range(s) of {minimum} to {maximum} years."
-                    )
+                conflicts.append(
+                    f"Profile age {age} is outside all stated age range(s): {ranges_text} years."
+                )
 
             if age >= 18 and _has(eligibility, "girl child", "boy child", "child beneficiary"):
                 warnings.append(
