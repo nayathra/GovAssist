@@ -174,6 +174,48 @@ class RecommendationMatchingTests(unittest.TestCase):
 
         self.assertIsNone(_score_profile(row, profile))
 
+
+    def test_gender_mismatch_for_women_only_scheme_is_excluded(self):
+        profile = ProfileRequest(
+            age="35",
+            gender="Male",
+            maritalStatus="Widowed",
+        )
+        row = make_row(
+            text="support for widowed applicants",
+            eligibility="The applicant should be a widow and a divorced woman. Women belonging to the age group of 18 to 50 years are eligible.",
+        )
+
+        self.assertIsNone(_score_profile(row, profile))
+
+    def test_parental_disability_requirement_is_reported_as_warning(self):
+        profile = ProfileRequest(
+            occupation="Student",
+            studentStatus="Yes",
+            disabilityStatus="No",
+        )
+        row = make_row(
+            text="scholarship support for students",
+            eligibility="Children of any Differently Abled persons holding the identity card issued by the welfare board are eligible.",
+        )
+
+        conflicts, warnings = _eligibility_conflicts(row, profile)
+
+        self.assertEqual(conflicts, [])
+        self.assertTrue(any("parent's/guardian's disability status" in item for item in warnings))
+
+    def test_bpl_requirement_is_not_assumed_from_income_band(self):
+        profile = ProfileRequest(income="Below ₹1 Lakh")
+        row = make_row(
+            text="financial assistance for households",
+            eligibility="The applicant should belong to the Below Poverty Line category.",
+        )
+
+        conflicts, warnings = _eligibility_conflicts(row, profile)
+
+        self.assertEqual(conflicts, [])
+        self.assertTrue(any("BPL/ration-card status" in item for item in warnings))
+
     def test_income_band_overlapping_ceiling_is_warned(self):
         profile = ProfileRequest(income="₹1 Lakh – ₹2.5 Lakh")
         row = make_row(
@@ -295,6 +337,38 @@ class UploadedDatasetIntegrationTests(unittest.TestCase):
 
         self.assertIn(scheme_name, self.records)
         self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
+    def test_male_applicant_is_not_matched_to_widow_remarriage_scheme(self):
+        profile = ProfileRequest(
+            age="35",
+            gender="Male",
+            state="Kerala",
+            occupation="Retired / Senior Citizen",
+            maritalStatus="Widowed",
+        )
+        scheme_name = "Mangalya Scheme For Widow Remarriage"
+
+        self.assertIn(scheme_name, self.records)
+        self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
+    def test_student_receives_warning_for_parental_disability_condition(self):
+        profile = ProfileRequest(
+            age="21",
+            gender="Female",
+            state="Tamil Nadu",
+            occupation="Student",
+            education="Undergraduate",
+            employmentStatus="Student",
+            studentStatus="Yes",
+            socialCategory="OBC",
+            disabilityStatus="No",
+        )
+        scheme_name = "Scholarship To Son And Daughter Of Differently Abled Persons"
+
+        self.assertIn(scheme_name, self.records)
+        result = _score_profile(self.records[scheme_name], profile)
+        self.assertIsNotNone(result)
+        self.assertTrue(any("parent's/guardian's disability status" in item for item in result[2]))
 
     def test_obc_student_is_not_matched_to_adi_dravidar_tribal_only_scheme(self):
         profile = ProfileRequest(
