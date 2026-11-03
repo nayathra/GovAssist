@@ -149,7 +149,7 @@ class RecommendationMatchingTests(unittest.TestCase):
     def test_age_range_excludes_applicant_above_maximum(self):
         profile = ProfileRequest(age="67", gender="Female", maritalStatus="Widowed")
         row = make_row(
-            text="financial assistance for widows",
+            text="financial assistance for widowed applicants",
             eligibility="Women belonging to the age group of 18 to 50 years are eligible.",
         )
 
@@ -158,7 +158,7 @@ class RecommendationMatchingTests(unittest.TestCase):
     def test_age_range_allows_applicant_within_range(self):
         profile = ProfileRequest(age="35", gender="Female", maritalStatus="Widowed")
         row = make_row(
-            text="financial assistance for widows",
+            text="financial assistance for widowed applicants",
             eligibility="Women belonging to the age group of 18 to 50 years are eligible.",
         )
 
