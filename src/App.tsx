@@ -63,6 +63,7 @@ function AppContent() {
   if (page === "profile") {
     return (
       <ProfilePage
+        initialProfile={profile}
         onFindSchemes={(submittedProfile) => {
           setProfile(submittedProfile)
           setPage("recommendations")
@@ -75,6 +76,7 @@ function AppContent() {
     return (
       <RecommendationsPage
         profile={profile}
+        onBack={() => setPage("profile")}
         onViewDetails={(schemeSlug) => {
           setSelectedScheme(schemeSlug)
           setPage("details")
