@@ -137,6 +137,21 @@ def _profile_income_bounds(income: str) -> Optional[tuple[float, float]]:
     return ranges.get(income)
 
 
+def _income_upper_limits(eligibility: str) -> tuple[float, ...]:
+    """Extract clearly stated upper income limits from eligibility text."""
+    patterns = [
+        r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
+        r"(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?\s*(?:or less|and below|per annum or less)",
+    ]
+    limits: list[float] = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, eligibility):
+            amount = _parse_money(f"{match.group(1)} {match.group(2) or ''}")
+            if amount is not None and amount not in limits:
+                limits.append(amount)
+    return tuple(limits)
+
+
 def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], list[str]]:
     """
     Return hard conflicts that make a scheme unsuitable for the supplied
@@ -162,15 +177,21 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
         conflicts.append("Eligibility appears restricted to females/women.")
 
     # Explicit state/residence restrictions.
+    # A scheme can apply in multiple states. Treat detected states as an
+    # allow-list instead of rejecting a match because another allowed state
+    # is also mentioned.
     if profile.state and profile.state != "Other / All India":
         normalized_profile_state = profile.state.lower().strip()
-        restricted_states = [
-            state for state in row.get("__restricted_states", ())
-            if state.lower() != normalized_profile_state
+        allowed_states = [
+            str(state).strip()
+            for state in row.get("__restricted_states", ())
+            if str(state).strip()
         ]
-        if restricted_states:
+        normalized_allowed_states = {state.lower() for state in allowed_states}
+        if allowed_states and normalized_profile_state not in normalized_allowed_states:
             conflicts.append(
-                f"The scheme appears restricted to {restricted_states[0]}, not {profile.state}."
+                "The scheme appears restricted to "
+                f"{', '.join(allowed_states)}, not {profile.state}."
             )
 
     # Explicit age thresholds.
@@ -211,17 +232,11 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     # Income thresholds.
     bounds = _profile_income_bounds(profile.income)
     if bounds:
-        upper_patterns = [
-            r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
-            r"(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?\s*(?:or less|and below|per annum or less)",
-        ]
-        for pattern in upper_patterns:
-            for match in re.finditer(pattern, eligibility):
-                amount = _parse_money(f"{match.group(1)} {match.group(2) or ''}")
-                if amount is not None and bounds[0] > amount:
-                    conflicts.append(
-                        f"The selected income range is entirely above the stated income limit of ₹{amount:,.0f}."
-                    )
+        for amount in _income_upper_limits(eligibility):
+            if bounds[0] > amount:
+                conflicts.append(
+                    f"The selected income range is entirely above the stated income limit of ₹{amount:,.0f}."
+                )
 
         if _has(eligibility, "income certificate", "annual income") and profile.income == "Below ₹1 Lakh":
             warnings.append(
@@ -278,9 +293,17 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
     if conflicts:
         return None
 
-    if profile.state and profile.state != "Other / All India" and _has(text, profile.state):
-        score += 25
-        _add_match(matches, "State")
+    if profile.state and profile.state != "Other / All India":
+        allowed_states = {
+            str(state).strip().lower()
+            for state in row.get("__restricted_states", ())
+            if str(state).strip()
+        }
+        # Mentioning a state in descriptive text is not proof of state-level
+        # relevance. Award this signal only for detected scheme coverage.
+        if profile.state.strip().lower() in allowed_states:
+            score += 25
+            _add_match(matches, "State")
 
     occupation_groups = {
         "Student": ("student", "education", "scholarship", "college", "higher education"),
@@ -301,7 +324,7 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         "Retired / Senior Citizen": ("senior citizen", "elderly", "pensioner", "retired"),
     }
 
-    if profile.occupation:
+    if profile.occupation and profile.occupation not in {"Other", "Prefer not to say"}:
         terms = occupation_groups.get(profile.occupation, (profile.occupation,))
         if _has(text, *terms):
             score += 22
@@ -311,7 +334,7 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         score += 20
         _add_match(matches, "Student status")
 
-    if profile.education and profile.education != "Prefer not to say" and _has_word(text, profile.education):
+    if profile.education and profile.education not in {"Other", "Prefer not to say"} and _has_word(text, profile.education):
         score += 10
         _add_match(matches, "Education")
 
@@ -319,7 +342,7 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         score += 10
         _add_match(matches, "Gender")
 
-    if profile.socialCategory and profile.socialCategory not in {"Prefer not to say", "General"} and _has_word(
+    if profile.socialCategory and profile.socialCategory not in {"Other", "Prefer not to say", "General"} and _has_word(
         text, profile.socialCategory
     ):
         score += 10
@@ -360,23 +383,26 @@ def _score_profile(row, profile: ProfileRequest) -> Optional[tuple[int, list[str
         except ValueError:
             pass
 
-    if profile.income and profile.income != "Prefer not to say":
-        income_terms = {
-            "Below ₹1 Lakh": ("below", "1 lakh", "low income", "economically weaker"),
-            "₹1 Lakh – ₹2.5 Lakh": ("1 lakh", "2.5 lakh"),
-            "₹2.5 Lakh – ₹5 Lakh": ("2.5 lakh", "5 lakh"),
-            "₹5 Lakh – ₹10 Lakh": ("5 lakh", "10 lakh"),
-            "Above ₹10 Lakh": ("10 lakh",),
-        }
-        if _has(text, *income_terms.get(profile.income, (profile.income,))):
+    income_bounds = _profile_income_bounds(profile.income)
+    if income_bounds:
+        # Only award an income match when the full selected range is within
+        # an explicit upper limit stated in the eligibility text.
+        if any(
+            income_bounds[1] <= limit
+            for limit in _income_upper_limits(_eligibility_text(row))
+        ):
             score += 8
             _add_match(matches, "Income")
 
-    if profile.landStatus and _has(text, "land", "agricultural land", "farmland", "cultivator"):
+    if profile.landStatus in {"Own agricultural land", "Lease agricultural land"} and _has(
+        text, "agricultural land", "farmland", "cultivator", "landowner", "land holder"
+    ):
         score += 12
         _add_match(matches, "Land / agricultural status")
 
-    if profile.businessStatus and _has(text, "business", "enterprise", "entrepreneur", "startup", "msme"):
+    if profile.businessStatus and profile.businessStatus != "Prefer not to say" and _has(
+        text, "business", "enterprise", "entrepreneur", "startup", "msme"
+    ):
         score += 12
         _add_match(matches, "Business status")
 
