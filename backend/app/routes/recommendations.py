@@ -100,6 +100,12 @@ def _detect_restricted_states(record: dict) -> tuple[str, ...]:
     is_state_scheme = str(record.get("level", "")).strip().lower() == "state"
     restricted: list[str] = []
 
+    # State/UT scope detection is only meaningful for records labelled as
+    # state-level. Returning immediately avoids running dozens of regular
+    # expressions against every central/national scheme during index creation.
+    if not is_state_scheme:
+        return ()
+
     for region, aliases in REGION_ALIASES.items():
         for alias in aliases:
             escaped = re.escape(alias.lower())
