@@ -16,6 +16,7 @@ from app.routes.recommendations import (  # noqa: E402
     ProfileRequest,
     _detect_restricted_states,
     _eligibility_conflicts,
+    _scheme_records,
     _score_profile,
 )
 
@@ -214,6 +215,107 @@ class RecommendationMatchingTests(unittest.TestCase):
         )
 
         self.assertIsNone(_score_profile(row, profile))
+
+
+class UploadedDatasetIntegrationTests(unittest.TestCase):
+    """Check known failure cases against the repository's real 3,400-row CSV."""
+
+    @classmethod
+    def setUpClass(cls):
+        _scheme_records.cache_clear()
+        cls.records = {
+            row["scheme_name"]: row
+            for row in _scheme_records()
+        }
+
+    @classmethod
+    def tearDownClass(cls):
+        _scheme_records.cache_clear()
+
+    def test_kerala_profile_is_not_matched_to_other_state_schemes(self):
+        profile = ProfileRequest(
+            age="67",
+            gender="Male",
+            state="Kerala",
+            occupation="Retired / Senior Citizen",
+            education="School",
+            employmentStatus="Retired",
+            studentStatus="No",
+            income="Below ₹1 Lakh",
+            socialCategory="General",
+            maritalStatus="Widowed",
+            disabilityStatus="No",
+            residence="Rural",
+        )
+        wrong_state_schemes = (
+            "Mahatma Jyotiba Phule Mandi shramik kalyaan yojana",
+            '"Fishing Ban Period Assistance" under "Welfare and Relief for Fishermen During Lean Seasons and Natural Calamities Scheme"',
+            "Lakshmir Bhandar Scheme",
+        )
+
+        for scheme_name in wrong_state_schemes:
+            with self.subTest(scheme=scheme_name):
+                self.assertIn(scheme_name, self.records)
+                self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
+    def test_land_owning_maharashtra_farmer_is_not_matched_to_landless_scheme(self):
+        profile = ProfileRequest(
+            age="42",
+            gender="Male",
+            state="Maharashtra",
+            occupation="Farmer",
+            education="School",
+            employmentStatus="Self-Employed",
+            studentStatus="No",
+            income="₹1 Lakh – ₹2.5 Lakh",
+            socialCategory="OBC",
+            maritalStatus="Married",
+            disabilityStatus="No",
+            residence="Rural",
+            landStatus="Own agricultural land",
+        )
+        scheme_name = "Aam Aadmi Bima Yojana (Maharashtra)"
+
+        self.assertIn(scheme_name, self.records)
+        self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
+    def test_senior_applicant_is_not_matched_to_18_to_50_scheme(self):
+        profile = ProfileRequest(
+            age="67",
+            gender="Female",
+            state="Kerala",
+            occupation="Retired / Senior Citizen",
+            employmentStatus="Retired",
+            studentStatus="No",
+            socialCategory="General",
+            maritalStatus="Widowed",
+            disabilityStatus="No",
+        )
+        scheme_name = "Mangalya Scheme For Widow Remarriage"
+
+        self.assertIn(scheme_name, self.records)
+        self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
+    def test_obc_student_is_not_matched_to_adi_dravidar_tribal_only_scheme(self):
+        profile = ProfileRequest(
+            age="16",
+            gender="Female",
+            state="Tamil Nadu",
+            occupation="Student",
+            education="Higher Secondary",
+            employmentStatus="Student",
+            studentStatus="Yes",
+            income="Below ₹1 Lakh",
+            socialCategory="OBC",
+            maritalStatus="Single",
+            disabilityStatus="No",
+            residence="Rural",
+        )
+        scheme_name = "Admission of Adi Dravidar/Tribal Students in Plus One at Reputed Schools"
+
+        self.assertIn(scheme_name, self.records)
+        self.assertIsNone(_score_profile(self.records[scheme_name], profile))
+
 
 
 if __name__ == "__main__":
