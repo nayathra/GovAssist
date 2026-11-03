@@ -39,6 +39,107 @@ def _eligibility_text(row) -> str:
     return row.get("__eligibility") or ""
 
 
+
+REGION_ALIASES = {
+    "Andhra Pradesh": ("Andhra Pradesh",),
+    "Arunachal Pradesh": ("Arunachal Pradesh",),
+    "Assam": ("Assam",),
+    "Bihar": ("Bihar",),
+    "Chhattisgarh": ("Chhattisgarh",),
+    "Goa": ("Goa",),
+    "Gujarat": ("Gujarat",),
+    "Haryana": ("Haryana",),
+    "Himachal Pradesh": ("Himachal Pradesh",),
+    "Jharkhand": ("Jharkhand",),
+    "Karnataka": ("Karnataka",),
+    "Kerala": ("Kerala",),
+    "Madhya Pradesh": ("Madhya Pradesh",),
+    "Maharashtra": ("Maharashtra",),
+    "Manipur": ("Manipur",),
+    "Meghalaya": ("Meghalaya",),
+    "Mizoram": ("Mizoram",),
+    "Nagaland": ("Nagaland",),
+    "Odisha": ("Odisha", "Orissa"),
+    "Punjab": ("Punjab",),
+    "Rajasthan": ("Rajasthan",),
+    "Sikkim": ("Sikkim",),
+    "Tamil Nadu": ("Tamil Nadu",),
+    "Telangana": ("Telangana",),
+    "Tripura": ("Tripura",),
+    "Uttar Pradesh": ("Uttar Pradesh",),
+    "Uttarakhand": ("Uttarakhand",),
+    "West Bengal": ("West Bengal",),
+    "Andaman and Nicobar Islands": (
+        "Andaman and Nicobar Islands", "Andaman & Nicobar Islands",
+        "A&N Islands", "Andaman Islands",
+    ),
+    "Chandigarh": ("Chandigarh", "Union Territory of Chandigarh"),
+    "Dadra and Nagar Haveli and Daman and Diu": (
+        "Dadra and Nagar Haveli and Daman and Diu",
+        "Dadra & Nagar Haveli and Daman & Diu",
+        "Dadra and Nagar Haveli", "Daman and Diu", "Dadra & Nagar Haveli",
+    ),
+    "Delhi": ("Delhi", "National Capital Territory of Delhi", "NCT of Delhi"),
+    "Jammu and Kashmir": ("Jammu and Kashmir", "Jammu & Kashmir", "J&K"),
+    "Ladakh": ("Ladakh", "Union Territory of Ladakh"),
+    "Lakshadweep": ("Lakshadweep", "Union Territory of Lakshadweep"),
+    "Puducherry": (
+        "Puducherry", "Pondicherry",
+        "Union Territory of Puducherry", "Union Territory of Pondicherry",
+    ),
+}
+
+
+def _detect_restricted_states(record: dict) -> tuple[str, ...]:
+    """Detect a scheme's state/UT scope from its eligibility and source text."""
+    eligibility = str(record.get("eligibility", "")).lower()
+    context = " ".join(
+        str(record.get(field, ""))
+        for field in ("scheme_name", "details", "benefits")
+    ).lower()
+    is_state_scheme = str(record.get("level", "")).strip().lower() == "state"
+    restricted: list[str] = []
+
+    for region, aliases in REGION_ALIASES.items():
+        for alias in aliases:
+            escaped = re.escape(alias.lower())
+            direct_patterns = (
+                rf"\bresidents?\s+(?:of|in)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
+                rf"\bordinarily\s+resident\s+(?:of|in)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
+                rf"\bpermanent\s+residents?\s+(?:of|in)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
+                rf"\bnative\s+(?:of|to)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
+                rf"\bdomicil(?:e|ed)\s+(?:of|in|at)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
+                rf"\bfrom\s+the\s+state\s+of\s+{escaped}\b",
+                rf"\bstate\s+of\s+{escaped}\b",
+                rf"\b(?:farmers?|workers?|students?|applicants?|beneficiaries|artisans?|industrialists?|units?)\b[^.;]{{0,120}}\b(?:of|from|in)\s+(?:the\s+)?{escaped}\b",
+            )
+            if any(re.search(pattern, eligibility) for pattern in direct_patterns):
+                restricted.append(region)
+                break
+
+            # For state schemes, a named region in the eligibility text is
+            # useful scope evidence even when the wording is not standardized.
+            if is_state_scheme and re.search(rf"\b{escaped}\b", eligibility):
+                restricted.append(region)
+                break
+
+    # Some records describe the responsible state department in their details
+    # but omit the state from the eligibility paragraph. Use this fallback only
+    # when exactly one region is named in the scheme's source text.
+    if is_state_scheme and not restricted:
+        context_regions = []
+        for region, aliases in REGION_ALIASES.items():
+            if any(
+                re.search(rf"\b{re.escape(alias.lower())}\b", context)
+                for alias in aliases
+            ):
+                context_regions.append(region)
+        if len(context_regions) == 1:
+            restricted.extend(context_regions)
+
+    return tuple(dict.fromkeys(restricted))
+
+
 @lru_cache(maxsize=1)
 def _scheme_records() -> tuple[dict, ...]:
     """Prepare the scheme index once for fast recommendation requests."""
@@ -47,14 +148,6 @@ def _scheme_records() -> tuple[dict, ...]:
         "scheme_name", "details", "benefits", "eligibility",
         "application", "documents", "tags", "schemeCategory", "level",
     ]
-    indian_states = (
-        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
-        "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
-        "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
-        "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
-        "Uttar Pradesh", "Uttarakhand", "West Bengal",
-    )
     records = []
     for row in df.to_dict("records"):
         record = dict(row)
@@ -63,36 +156,7 @@ def _scheme_records() -> tuple[dict, ...]:
         ).lower()
         record["__eligibility"] = str(record.get("eligibility", "")).lower()
 
-        restricted_states = []
-        eligibility = record["__eligibility"]
-        context = " ".join(
-            str(record.get(field, ""))
-            for field in ("scheme_name", "details", "benefits")
-        ).lower()
-
-        for state_name in indian_states:
-            state_lower = state_name.lower()
-            direct_patterns = (
-                rf"resid(?:ing|ence)\s+(?:in|of)\s+{re.escape(state_lower)}",
-                rf"domicile\s+(?:of|in)\s+{re.escape(state_lower)}",
-                rf"native\s+(?:of|to)\s+{re.escape(state_lower)}",
-                rf"state\s+of\s+{re.escape(state_lower)}",
-                rf"from\s+the\s+state\s+of\s+{re.escape(state_lower)}",
-            )
-            state_patterns = (
-                rf"government\s+of\s+{re.escape(state_lower)}",
-                rf"govt\.?\s+of\s+{re.escape(state_lower)}",
-                rf"department[^.]{0,100}\b{re.escape(state_lower)}\b",
-                rf"government\s+of\s+{re.escape(state_lower.split()[0])}\b",
-            )
-            if any(re.search(pattern, eligibility) for pattern in direct_patterns):
-                restricted_states.append(state_name)
-            if str(record.get("level", "")).strip().lower() == "state" and any(
-                re.search(pattern, context) for pattern in state_patterns
-            ):
-                restricted_states.append(state_name)
-
-        record["__restricted_states"] = tuple(dict.fromkeys(restricted_states))
+        record["__restricted_states"] = _detect_restricted_states(record)
         records.append(record)
 
     return tuple(records)
@@ -140,7 +204,7 @@ def _profile_income_bounds(income: str) -> Optional[tuple[float, float]]:
 def _income_upper_limits(eligibility: str) -> tuple[float, ...]:
     """Extract clearly stated upper income limits from eligibility text."""
     patterns = [
-        r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
+        r"(?:annual|family|parental|household)?\s*(?:income|earnings)[^.;,]{0,80}?(?:not exceed|does not exceed|not more than|should be less than|must be less than|less than|below|under|up to|maximum of|<=|<)\s*(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?",
         r"(?:rs\.?|₹)?\s*([\d,.]+)\s*(lakh|lakhs|crore|crores)?\s*(?:or less|and below|per annum or less)",
     ]
     limits: list[float] = []
@@ -176,6 +240,42 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     ):
         conflicts.append("Eligibility appears restricted to females/women.")
 
+    # Explicit social-category restrictions when the eligibility text names a
+    # required category. The profile's category is not treated as a match merely
+    # because another category appears somewhere in the scheme description.
+    if profile.socialCategory and profile.socialCategory not in {
+        "Other", "Prefer not to say", ""
+    }:
+        category_aliases = {
+            "SC": ("scheduled caste", "adi dravidar", "nav-buddhist", "nav buddhist"),
+            "ST": ("scheduled tribe", "tribal", "adivasi"),
+            "OBC": ("other backward classes", "backward classes", "backward class", "obc", "mbc"),
+            "General": ("general category", "general caste"),
+        }
+        clauses = re.findall(
+            r"(?:should|must)\s+(?:belong(?:s)?\s+to|be\s+from|be\s+a\s+member\s+of)\s+(?:the\s+)?([^.;]+)",
+            eligibility,
+        )
+        for clause in clauses:
+            required_categories = {
+                category
+                for category, aliases in category_aliases.items()
+                if any(
+                    re.search(rf"\b{re.escape(alias)}\b", clause)
+                    for alias in aliases
+                )
+            }
+            if (
+                required_categories
+                and profile.socialCategory not in required_categories
+            ):
+                conflicts.append(
+                    "The scheme appears restricted to "
+                    f"{'/'.join(sorted(required_categories))} applicants, "
+                    f"but the profile category is {profile.socialCategory}."
+                )
+                break
+
     # Explicit state/residence restrictions.
     # A scheme can apply in multiple states. Treat detected states as an
     # allow-list instead of rejecting a match because another allowed state
@@ -192,6 +292,14 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             conflicts.append(
                 "The scheme appears restricted to "
                 f"{', '.join(allowed_states)}, not {profile.state}."
+            )
+
+        if (
+            not allowed_states
+            and str(row.get("level", "")).strip().lower() == "state"
+        ):
+            warnings.append(
+                "The dataset marks this as a state-level scheme, but its state/UT coverage could not be confirmed."
             )
 
     # Explicit age thresholds.
@@ -224,6 +332,29 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
                     if age < minimum:
                         conflicts.append(f"Profile age {age} is below the stated minimum age of {minimum}.")
 
+            age_ranges = []
+            age_range_patterns = (
+                r"(?:age|age group|age range|age limit)[^.;]{0,60}?\b(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})",
+                r"\bbetween\s+(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})\s*(?:years?|yrs?)\b",
+                r"\bwithin\s+the\s+age\s+group\s+of\s+(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})\b",
+            )
+            for pattern in age_range_patterns:
+                for match in re.finditer(pattern, eligibility):
+                    minimum, maximum = int(match.group(1)), int(match.group(2))
+                    if minimum <= maximum:
+                        age_ranges.append((minimum, maximum))
+
+            if age_ranges and not any(minimum <= age <= maximum for minimum, maximum in age_ranges):
+                minimum = min(item[0] for item in age_ranges)
+                maximum = max(item[1] for item in age_ranges)
+                warnings.append(
+                    f"The stated age range(s) do not clearly include profile age {age}; verify the exact category-specific age rule."
+                )
+                if age < minimum or age > maximum:
+                    conflicts.append(
+                        f"Profile age {age} is outside the stated age range(s) of {minimum} to {maximum} years."
+                    )
+
             if age >= 18 and _has(eligibility, "girl child", "boy child", "child beneficiary"):
                 warnings.append(
                     "The eligibility mentions a child-related condition; the available profile does not establish the scheme's exact definition of 'child'."
@@ -236,6 +367,10 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
             if bounds[0] > amount:
                 conflicts.append(
                     f"The selected income range is entirely above the stated income limit of ₹{amount:,.0f}."
+                )
+            elif bounds[1] > amount:
+                warnings.append(
+                    f"The selected income range overlaps the stated income limit of ₹{amount:,.0f}; exact income must be checked."
                 )
 
         if _has(eligibility, "income certificate", "annual income") and profile.income == "Below ₹1 Lakh":
@@ -265,6 +400,22 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
         "widowed",
     ):
         conflicts.append("The scheme appears restricted to widows/widowed applicants.")
+
+    # A profile that owns agricultural land cannot satisfy an explicit
+    # landless / no-family-agricultural-land requirement.
+    if profile.landStatus == "Own agricultural land" and _has(
+        eligibility,
+        "landless",
+        "should not own any agricultural land",
+        "must not own any agricultural land",
+        "family should not own any agricultural land",
+        "family must not own any agricultural land",
+        "family should not own agricultural land",
+        "family must not own agricultural land",
+    ):
+        conflicts.append(
+            "The scheme appears to require a landless applicant/household, but the profile says agricultural land is owned."
+        )
 
     # Conditions that the current profile form cannot directly verify.
     if _has(eligibility, "destitute"):
