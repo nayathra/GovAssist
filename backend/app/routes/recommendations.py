@@ -240,6 +240,28 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     ):
         conflicts.append("Eligibility appears restricted to females/women.")
 
+    # Do not recommend women-only schemes to men (and vice versa) when the
+    # eligibility text clearly states the beneficiary's gender.
+    if profile.gender == "Male" and _has(
+        eligibility,
+        "applicant should be a woman",
+        "applicant must be a woman",
+        "women applicants",
+        "women belonging to the age group",
+        "female applicants",
+        "female candidates",
+    ):
+        conflicts.append("The scheme appears intended for women applicants, but the profile gender is Male.")
+    if profile.gender == "Female" and _has(
+        eligibility,
+        "applicant should be a man",
+        "applicant must be a man",
+        "men applicants",
+        "male applicants",
+        "male candidates",
+    ):
+        conflicts.append("The scheme appears intended for men applicants, but the profile gender is Female.")
+
     # Explicit social-category restrictions when the eligibility text names a
     # required category. The profile's category is not treated as a match merely
     # because another category appears somewhere in the scheme description.
@@ -429,6 +451,21 @@ def _eligibility_conflicts(row, profile: ProfileRequest) -> tuple[list[str], lis
     if _has(eligibility, "returned migrant", "return migrant", "migrant workers returned", "returned to tamil nadu"):
         warnings.append(
             "The scheme mentions a returned-migrant condition; the current profile does not establish this condition."
+        )
+
+    if _has(eligibility, "below poverty line", "bpl category", "bpl family") or _has_word(eligibility, "bpl"):
+        warnings.append(
+            "The scheme mentions Below Poverty Line (BPL) status; the profile records an income range but not BPL/ration-card status."
+        )
+    if _has(
+        eligibility,
+        "children of any differently abled persons",
+        "son and daughter of differently abled persons",
+        "children of persons with disabilities",
+        "children of persons with disability",
+    ):
+        warnings.append(
+            "The scheme depends on a parent's/guardian's disability status, which the current profile does not record."
         )
 
     return list(dict.fromkeys(conflicts)), list(dict.fromkeys(warnings))
