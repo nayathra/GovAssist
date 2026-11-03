@@ -63,6 +63,7 @@ function AppContent() {
   if (page === "profile") {
     return (
       <ProfilePage
+        initialProfile={profile}
         onFindSchemes={(submittedProfile) => {
           setProfile(submittedProfile)
           setPage("recommendations")
