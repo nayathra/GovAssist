@@ -14,6 +14,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.routes.recommendations import (  # noqa: E402
     ProfileRequest,
+    _detect_restricted_states,
     _eligibility_conflicts,
     _score_profile,
 )
@@ -94,6 +95,95 @@ class RecommendationMatchingTests(unittest.TestCase):
         row = make_row(text="business, enterprise and startup support")
 
         self.assertIsNone(_score_profile(row, profile))
+
+
+    def test_resident_of_state_phrase_is_detected(self):
+        row = {
+            "scheme_name": "Mandi Worker Support",
+            "details": "A scheme of the Rajasthan Government.",
+            "benefits": "",
+            "eligibility": "The applicant should be a permanent resident of Rajasthan.",
+            "level": "State",
+        }
+
+        self.assertEqual(_detect_restricted_states(row), ("Rajasthan",))
+
+    def test_puducherry_union_territory_phrase_is_detected(self):
+        row = {
+            "scheme_name": "Fishing Assistance",
+            "details": "A scheme for Puducherry fishermen.",
+            "benefits": "",
+            "eligibility": "The applicant should be an ordinarily resident of the Union territory of Puducherry.",
+            "level": "State",
+        }
+
+        self.assertEqual(_detect_restricted_states(row), ("Puducherry",))
+
+    def test_state_level_scheme_with_unknown_coverage_produces_warning(self):
+        profile = ProfileRequest(state="Kerala", occupation="Student")
+        row = make_row(
+            text="student support for eligible applicants",
+            eligibility="Students may apply.",
+        )
+        row["level"] = "State"
+
+        conflicts, warnings = _eligibility_conflicts(row, profile)
+
+        self.assertEqual(conflicts, [])
+        self.assertTrue(any("state/UT coverage could not be confirmed" in item for item in warnings))
+
+    def test_owned_land_conflicts_with_landless_requirement(self):
+        profile = ProfileRequest(
+            occupation="Farmer",
+            state="Maharashtra",
+            landStatus="Own agricultural land",
+        )
+        row = make_row(
+            text="financial assistance for landless agricultural workers",
+            eligibility="The applicant must be a landless labourer. The applicant's family should not own any agricultural land.",
+            restricted_states=("Maharashtra",),
+        )
+
+        self.assertIsNone(_score_profile(row, profile))
+
+    def test_age_range_excludes_applicant_above_maximum(self):
+        profile = ProfileRequest(age="67", gender="Female", maritalStatus="Widowed")
+        row = make_row(
+            text="financial assistance for widows",
+            eligibility="Women belonging to the age group of 18 to 50 years are eligible.",
+        )
+
+        self.assertIsNone(_score_profile(row, profile))
+
+    def test_age_range_allows_applicant_within_range(self):
+        profile = ProfileRequest(age="35", gender="Female", maritalStatus="Widowed")
+        row = make_row(
+            text="financial assistance for widows",
+            eligibility="Women belonging to the age group of 18 to 50 years are eligible.",
+        )
+
+        self.assertIsNotNone(_score_profile(row, profile))
+
+    def test_specific_social_category_mismatch_is_excluded(self):
+        profile = ProfileRequest(socialCategory="OBC", occupation="Student")
+        row = make_row(
+            text="scholarship for students",
+            eligibility="The beneficiary should belong to the Adi Dravidar/Tribal community.",
+        )
+
+        self.assertIsNone(_score_profile(row, profile))
+
+    def test_income_band_overlapping_ceiling_is_warned(self):
+        profile = ProfileRequest(income="₹1 Lakh – ₹2.5 Lakh")
+        row = make_row(
+            text="financial support for eligible households",
+            eligibility="The annual family income should not exceed Rs. 2 lakh.",
+        )
+
+        conflicts, warnings = _eligibility_conflicts(row, profile)
+
+        self.assertEqual(conflicts, [])
+        self.assertTrue(any("overlaps the stated income limit" in item for item in warnings))
 
     def test_income_match_requires_an_explicit_eligibility_limit(self):
         profile = ProfileRequest(income="Below ₹1 Lakh")
