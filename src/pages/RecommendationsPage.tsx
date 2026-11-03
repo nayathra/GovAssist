@@ -20,10 +20,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000
 
 const RecommendationsPage = ({
   profile,
+  onBack,
   onViewDetails,
   onExploreSchemes,
 }: {
   profile: Profile
+  onBack: () => void
   onViewDetails: (slug: string) => void
   onExploreSchemes: () => void
 }) => {
@@ -66,7 +68,7 @@ const RecommendationsPage = ({
             <div className="text-xl font-extrabold tracking-tight text-[#073b6f]">Gov<span className="text-[#0f8a5f]">Assist</span></div>
             <p className="text-xs font-medium text-slate-500">Potentially Relevant Scheme Discovery</p>
           </div>
-          <button onClick={() => window.history.back()} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50">{t("back")}</button>
+          <button onClick={onBack} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50">{t("back")}</button>
         <LanguageSwitcher />
           </div>
       </header>
