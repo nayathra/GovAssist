@@ -21,7 +21,7 @@ export type Profile = {
   businessType: string
 }
 
-const initialProfile: Profile = {
+const emptyProfile: Profile = {
   name: "",
   age: "",
   gender: "",
@@ -121,11 +121,13 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#102a43] outline-none transition placeholder:text-slate-400 focus:border-[#0b63b6] focus:ring-4 focus:ring-[#0b63b6]/10"
 
 const ProfilePage = ({
+  initialProfile: savedProfile,
   onFindSchemes,
 }: {
+  initialProfile?: Profile | null
   onFindSchemes: (profile: Profile) => void
 }) => {
-  const [profile, setProfile] = useState<Profile>(initialProfile)
+  const [profile, setProfile] = useState<Profile>(() => savedProfile ?? emptyProfile)
 
   const update = (field: keyof Profile, value: string) => {
     setProfile((current) => ({ ...current, [field]: value }))
