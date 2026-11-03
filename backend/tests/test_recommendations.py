@@ -156,6 +156,15 @@ class RecommendationMatchingTests(unittest.TestCase):
 
         self.assertIsNone(_score_profile(row, profile))
 
+    def test_age_in_gap_between_disjoint_ranges_is_excluded(self):
+        profile = ProfileRequest(age="35")
+        row = make_row(
+            text="age-specific assistance",
+            eligibility="Applicants aged 18 to 25 years or 40 to 50 years are eligible.",
+        )
+
+        self.assertIsNone(_score_profile(row, profile))
+
     def test_age_range_allows_applicant_within_range(self):
         profile = ProfileRequest(age="35", gender="Female", maritalStatus="Widowed")
         row = make_row(
