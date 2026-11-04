@@ -17,8 +17,10 @@ type Scheme = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
 
 const SchemesPage = ({
+  onBack,
   onViewDetails,
 }: {
+  onBack: () => void
   onViewDetails: (schemeSlug: string) => void
 }) => {
   const { t } = useLanguage()
@@ -124,7 +126,7 @@ const SchemesPage = ({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => window.history.back()}
+              onClick={onBack}
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               ← Back
