@@ -74,7 +74,7 @@ def _tamil_search_hints(question: str) -> str:
     return " ".join(english for tamil, english in TAMIL_QUERY_HINTS.items() if tamil in question)
 
 def _is_tamil(question: str) -> bool:
-    return any("\\u0B80" <= char <= "\\u0BFF" for char in question)
+    return any(0x0B80 <= ord(char) <= 0x0BFF for char in question)
 
 SYNONYMS = {
     "student": {"student", "students", "education", "college", "university", "scholarship"},
