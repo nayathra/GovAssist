@@ -29,11 +29,12 @@ const AIAssistantPage = () => {
   const { t } = useLanguage()
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSend = async (messageText?: string) => {
     const text = (messageText ?? input).trim()
 
-    if (!text) return
+    if (!text || isLoading) return
 
     const userMessage: Message = {
       id: Date.now(),
@@ -43,6 +44,7 @@ const AIAssistantPage = () => {
 
     setMessages((previous) => [...previous, userMessage])
     setInput("")
+    setIsLoading(true)
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/assistant`, {
@@ -74,6 +76,8 @@ const AIAssistantPage = () => {
           text: "I couldn't connect to the GovAssist backend right now. Please make sure the backend server is running and try again.",
         },
       ])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -83,7 +87,7 @@ const AIAssistantPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
+    <div className="flex min-h-screen flex-col bg-[#f7f9fc] text-slate-900">
       {/* Top utility bar */}
       <div className="bg-[#071d35] px-4 py-1.5 text-center text-[11px] text-white/80">
         {t("brandTagline")}
@@ -120,9 +124,9 @@ const AIAssistantPage = () => {
       </header>
 
       {/* Main content */}
-      <main className="w-full px-5 py-5 lg:px-8">
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-5 py-4 lg:px-8">
         {/* Intro */}
-        <section className="mb-4">
+        <section className="mb-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#073b6f] text-lg">
               🤖
@@ -144,7 +148,7 @@ const AIAssistantPage = () => {
         </section>
 
         {/* Chat container */}
-        <section className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="flex min-h-[65vh] w-full flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {/* Chat header */}
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -171,9 +175,9 @@ const AIAssistantPage = () => {
           </div>
 
           {/* Conversation area */}
-          <div className="min-h-[120px] max-h-[360px] w-full space-y-3 overflow-y-auto bg-[#f8fafc] p-4 md:p-5">
+          <div className="min-h-0 flex-1 w-full space-y-4 overflow-y-auto bg-[#f8fafc] p-4 md:p-6">
             {messages.length === 0 ? (
-              <div className="flex min-h-[120px] items-center justify-center text-center">
+              <div className="flex min-h-[180px] items-center justify-center text-center">
                 <p className="text-xs text-slate-400">
                   Ask a question about government schemes to start the conversation.
                 </p>
@@ -198,7 +202,7 @@ const AIAssistantPage = () => {
                     </div>
 
                     <div
-                      className={`rounded-2xl px-3 py-2 text-xs leading-5 ${
+                      className={`rounded-2xl px-4 py-3 text-sm leading-6 ${
                         message.type === "user"
                           ? "rounded-tr-sm bg-[#073b6f] text-white"
                           : "rounded-tl-sm border border-slate-200 bg-white text-slate-700"
@@ -209,6 +213,18 @@ const AIAssistantPage = () => {
                   </div>
                 </div>
               ))
+            )}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-3 rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                  <span className="flex gap-1" aria-hidden="true">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#07845b]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#07845b] [animation-delay:150ms]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#07845b] [animation-delay:300ms]" />
+                  </span>
+                  GovAssist is thinking…
+                </div>
+              </div>
             )}
           </div>
 
@@ -222,8 +238,9 @@ const AIAssistantPage = () => {
               {suggestedQuestions.map((question) => (
                 <button
                   key={question}
+                  disabled={isLoading}
                   onClick={() => handleSend(question)}
-                  className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition hover:border-[#073b6f] hover:bg-[#eef4fb] hover:text-[#073b6f]"
+                  className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-[#073b6f] hover:bg-[#eef4fb] hover:text-[#073b6f] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {question}
                 </button>
@@ -245,14 +262,15 @@ const AIAssistantPage = () => {
                 }}
                 rows={1}
                 placeholder={t("askSchemesPlaceholder")}
-                className="min-h-[42px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
+                className="min-h-[48px] flex-1 resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#073b6f] focus:ring-2 focus:ring-[#073b6f]/10"
               />
 
               <button
                 onClick={() => handleSend()}
-                className="rounded-xl bg-[#073b6f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#062f59]"
+                disabled={isLoading || !input.trim()}
+                className="rounded-xl bg-[#073b6f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#062f59] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {t("send")}
+                {isLoading ? "Thinking…" : t("send")}
               </button>
             </div>
 
