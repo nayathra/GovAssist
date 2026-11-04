@@ -108,7 +108,12 @@ def _detect_restricted_states(record: dict) -> tuple[str, ...]:
 
     for region, aliases in REGION_ALIASES.items():
         for alias in aliases:
-            escaped = re.escape(alias.lower())
+            normalized_alias = alias.lower()
+            # Most state aliases do not occur in a given eligibility string.
+            # Avoid running multiple regular expressions for those candidates.
+            if normalized_alias not in eligibility:
+                continue
+            escaped = re.escape(normalized_alias)
             direct_patterns = (
                 rf"\bresidents?\s+(?:of|in)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
                 rf"\bordinarily\s+resident\s+(?:of|in)\s+(?:(?:the\s+)?(?:state|union territory|ut)\s+of\s+)?{escaped}\b",
