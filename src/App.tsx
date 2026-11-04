@@ -10,11 +10,12 @@ import DashboardPage from "./pages/DashboardPage"
 import type { Profile } from "./pages/ProfilePage"
 import { LanguageProvider } from "./i18n"
 
-function AppContent() {
-  const [page, setPage] = useState<
-    "landing" | "auth" | "dashboard" | "profile" | "recommendations" | "schemes" | "details" | "ai"
-  >("landing")
+type Page = "landing" | "auth" | "dashboard" | "profile" | "recommendations" | "schemes" | "details" | "ai"
 
+function AppContent() {
+  const [pageStack, setPageStack] = useState<Page[]>(["landing"])
+  const page = pageStack[pageStack.length - 1]
+  const [visitedPages, setVisitedPages] = useState<Set<Page>>(() => new Set(["landing"]))
   const [selectedScheme, setSelectedScheme] = useState("")
   const [profile, setProfile] = useState<Profile | null>(() => {
     const savedProfile = localStorage.getItem("govassist_profile")
@@ -25,95 +26,108 @@ function AppContent() {
     return savedUser ? JSON.parse(savedUser) : null
   })
 
-  if (page === "auth") {
-    return (
-      <AuthPage
-        onSuccess={(authenticatedUser) => {
-          setUser(authenticatedUser)
-          setPage("dashboard")
-        }}
-        onBack={() => setPage("landing")}
-      />
-    )
+  const navigate = (nextPage: Page) => {
+    setVisitedPages((current) => new Set(current).add(nextPage))
+    setPageStack((current) => [...current, nextPage])
   }
 
-  if (page === "dashboard" && user) {
-    return (
-      <DashboardPage
-        user={user}
-        profile={profile}
-        onProfile={() => setPage("profile")}
-        onRecommendations={() => setPage("recommendations")}
-        onSchemes={() => setPage("schemes")}
-        onAI={() => setPage("ai")}
-        onViewScheme={(schemeSlug) => {
-          setSelectedScheme(schemeSlug)
-          setPage("details")
-        }}
-        onHome={() => setPage("landing")}
-        onLogout={() => {
-          localStorage.removeItem("govassist_user")
-          setUser(null)
-          setPage("landing")
-        }}
-      />
-    )
+  const goBack = () => {
+    setPageStack((current) => current.length > 1 ? current.slice(0, -1) : current)
   }
 
-  if (page === "profile") {
-    return (
-      <ProfilePage
-        initialProfile={profile}
-        onFindSchemes={(submittedProfile) => {
-          setProfile(submittedProfile)
-          setPage("recommendations")
-        }}
-      />
-    )
-  }
-
-  if (page === "recommendations" && profile) {
-    return (
-      <RecommendationsPage
-        profile={profile}
-        onBack={() => setPage("profile")}
-        onViewDetails={(schemeSlug) => {
-          setSelectedScheme(schemeSlug)
-          setPage("details")
-        }}
-        onExploreSchemes={() => setPage("schemes")}
-      />
-    )
-  }
-
-  if (page === "schemes") {
-    return (
-      <SchemesPage
-        onBack={() => setPage(user ? "dashboard" : "landing")}
-        onViewDetails={(schemeSlug) => {
-          setSelectedScheme(schemeSlug)
-          setPage("details")
-        }}
-      />
-    )
-  }
-
-  if (page === "details") {
-    return <SchemeDetailsPage schemeSlug={selectedScheme} />
-  }
-
-  if (page === "ai") {
-    return <AIAssistantPage />
+  const openScheme = (schemeSlug: string) => {
+    setSelectedScheme(schemeSlug)
+    navigate("details")
   }
 
   return (
-    <LandingPage
-      user={user}
-      onLogin={() => setPage(user ? "dashboard" : "auth")}
-      onGetStarted={() => setPage("profile")}
-      onExploreSchemes={() => setPage("schemes")}
-      onAskAI={() => setPage("ai")}
-    />
+    <>
+      <div className={page === "landing" ? "block" : "hidden"}>
+        <LandingPage
+          user={user}
+          onLogin={() => navigate(user ? "dashboard" : "auth")}
+          onGetStarted={() => navigate("profile")}
+          onExploreSchemes={() => navigate("schemes")}
+          onAskAI={() => navigate("ai")}
+        />
+      </div>
+
+      {visitedPages.has("auth") && (
+        <div className={page === "auth" ? "block" : "hidden"}>
+          <AuthPage
+            onSuccess={(authenticatedUser) => {
+              setUser(authenticatedUser)
+              localStorage.setItem("govassist_user", JSON.stringify(authenticatedUser))
+              navigate("dashboard")
+            }}
+            onBack={goBack}
+          />
+        </div>
+      )}
+
+      {user && visitedPages.has("dashboard") && (
+        <div className={page === "dashboard" ? "block" : "hidden"}>
+          <DashboardPage
+            user={user}
+            profile={profile}
+            onProfile={() => navigate("profile")}
+            onRecommendations={() => navigate("recommendations")}
+            onSchemes={() => navigate("schemes")}
+            onAI={() => navigate("ai")}
+            onViewScheme={openScheme}
+            onHome={() => navigate("landing")}
+            onLogout={() => {
+              localStorage.removeItem("govassist_user")
+              setUser(null)
+              setPageStack(["landing"])
+            }}
+          />
+        </div>
+      )}
+
+      {visitedPages.has("profile") && (
+        <div className={page === "profile" ? "block" : "hidden"}>
+          <ProfilePage
+            initialProfile={profile}
+            onBack={goBack}
+            onFindSchemes={(submittedProfile) => {
+              setProfile(submittedProfile)
+              localStorage.setItem("govassist_profile", JSON.stringify(submittedProfile))
+              navigate("recommendations")
+            }}
+          />
+        </div>
+      )}
+
+      {visitedPages.has("recommendations") && profile && (
+        <div className={page === "recommendations" ? "block" : "hidden"}>
+          <RecommendationsPage
+            profile={profile}
+            onBack={goBack}
+            onViewDetails={openScheme}
+            onExploreSchemes={() => navigate("schemes")}
+          />
+        </div>
+      )}
+
+      {visitedPages.has("schemes") && (
+        <div className={page === "schemes" ? "block" : "hidden"}>
+          <SchemesPage onBack={goBack} onViewDetails={openScheme} />
+        </div>
+      )}
+
+      {visitedPages.has("details") && (
+        <div className={page === "details" ? "block" : "hidden"}>
+          <SchemeDetailsPage schemeSlug={selectedScheme} onBack={goBack} />
+        </div>
+      )}
+
+      {visitedPages.has("ai") && (
+        <div className={page === "ai" ? "block" : "hidden"}>
+          <AIAssistantPage onBack={goBack} />
+        </div>
+      )}
+    </>
   )
 }
 

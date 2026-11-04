@@ -16,6 +16,7 @@ type Scheme = {
 
 type SchemeDetailsPageProps = {
   schemeSlug: string
+  onBack: () => void
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
@@ -23,6 +24,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000
 
 const SchemeDetailsPage = ({
   schemeSlug,
+  onBack,
 }: SchemeDetailsPageProps) => {
   const [activeTab, setActiveTab] = useState("Overview")
   const [scheme, setScheme] = useState<Scheme | null>(null)
@@ -135,7 +137,7 @@ const SchemeDetailsPage = ({
             </p>
 
             <button
-              onClick={() => window.history.back()}
+              onClick={onBack}
               className="mt-6 rounded-xl bg-[#073b6f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#062f59]"
             >
               {t("backToSchemes")}
@@ -175,7 +177,7 @@ const SchemeDetailsPage = ({
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
                         <button
-              onClick={() => window.history.back()}
+              onClick={onBack}
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               {t("back")}

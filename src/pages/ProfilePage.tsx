@@ -21,7 +21,7 @@ export type Profile = {
   businessType: string
 }
 
-const initialProfile: Profile = {
+const emptyProfile: Profile = {
   name: "",
   age: "",
   gender: "",
@@ -121,11 +121,15 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#102a43] outline-none transition placeholder:text-slate-400 focus:border-[#0b63b6] focus:ring-4 focus:ring-[#0b63b6]/10"
 
 const ProfilePage = ({
+  initialProfile,
   onFindSchemes,
+  onBack,
 }: {
+  initialProfile: Profile | null
   onFindSchemes: (profile: Profile) => void
+  onBack: () => void
 }) => {
-  const [profile, setProfile] = useState<Profile>(initialProfile)
+  const [profile, setProfile] = useState<Profile>(initialProfile ?? emptyProfile)
 
   const update = (field: keyof Profile, value: string) => {
     setProfile((current) => ({ ...current, [field]: value }))
@@ -162,7 +166,7 @@ const ProfilePage = ({
           </div>
 
           <button
-            onClick={() => window.history.back()}
+            onClick={onBack}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50"
           >
             ← Back
