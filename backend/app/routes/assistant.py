@@ -43,6 +43,39 @@ STOP_WORDS = {
 }
 
 
+# Lightweight Tamil-to-English hints for common scheme topics.
+# These hints improve retrieval for common terms; they are not a complete translator.
+TAMIL_QUERY_HINTS = {
+    "மாணவர்": "student education scholarship",
+    "மாணவர்கள்": "students education scholarship",
+    "கல்வி": "education student scholarship",
+    "படிப்பு": "education student scholarship",
+    "உதவித்தொகை": "scholarship financial assistance",
+    "விவசாயி": "farmer agriculture farming",
+    "விவசாயிகள்": "farmers agriculture farming",
+    "விவசாயம்": "agriculture farmer",
+    "பெண்கள்": "women female",
+    "பெண்": "women female",
+    "முதியோர்": "senior elderly pension",
+    "ஓய்வூதியம்": "pension senior elderly",
+    "மாற்றுத்திறனாளி": "disability disabled persons",
+    "வேலை": "employment job worker",
+    "வேலையின்மை": "unemployment employment job",
+    "தொழில்": "business enterprise entrepreneur msme",
+    "கடன்": "loan financial assistance",
+    "தகுதி": "eligibility eligible qualification",
+    "ஆவணம்": "documents certificate proof",
+    "ஆவணங்கள்": "documents certificate proof",
+    "விண்ணப்பம்": "application apply",
+    "தமிழ்நாடு": "Tamil Nadu state",
+}
+
+def _tamil_search_hints(question: str) -> str:
+    return " ".join(english for tamil, english in TAMIL_QUERY_HINTS.items() if tamil in question)
+
+def _is_tamil(question: str) -> bool:
+    return any("\\u0B80" <= char <= "\\u0BFF" for char in question)
+
 SYNONYMS = {
     "student": {"student", "students", "education", "college", "university", "scholarship"},
     "education": {"education", "student", "students", "school", "college", "university", "scholarship"},
@@ -255,27 +288,44 @@ End every useful answer with:
 def _fallback_answer(sources: list[dict], question: str) -> str:
     best = sources[0]
     question_lower = question.lower()
+    tamil_question = _is_tamil(question)
 
-    if any(word in question_lower for word in ("eligibility", "eligible", "qualify", "qualification")):
+    if any(word in question_lower for word in ("eligibility", "eligible", "qualify", "qualification")) or "தகுதி" in question:
         focus = "eligibility"
         intro = f"I found eligibility information for “{best['scheme_name']}” in the available scheme data."
-    elif any(word in question_lower for word in ("benefit", "benefits", "support", "assistance", "amount")):
+    elif any(word in question_lower for word in ("benefit", "benefits", "support", "assistance", "amount")) or any(x in question for x in ("உதவி", "நன்மை", "தொகை")):
         focus = "benefits"
         intro = f"I found benefit information for “{best['scheme_name']}” in the available scheme data."
-    elif any(word in question_lower for word in ("document", "documents", "certificate", "proof")):
+    elif any(word in question_lower for word in ("document", "documents", "certificate", "proof")) or any(x in question for x in ("ஆவணம்", "ஆவணங்கள்")):
         focus = "documents"
         intro = f"I found document information for “{best['scheme_name']}” in the available scheme data."
-    elif any(word in question_lower for word in ("apply", "application", "apply for")):
+    elif any(word in question_lower for word in ("apply", "application", "apply for")) or "விண்ணப்பம்" in question:
         focus = "application"
         intro = f"I found application information for “{best['scheme_name']}” in the available scheme data."
     else:
         focus = "details"
         intro = f"I found scheme information that may help with your question. The strongest matching scheme is “{best['scheme_name']}”."
 
+    if tamil_question:
+        intro = {
+            "eligibility": f"“{best['scheme_name']}” திட்டத்திற்கான தகுதி விவரங்கள் கிடைத்துள்ளன.",
+            "benefits": f"“{best['scheme_name']}” திட்டத்தின் நன்மைகள் பற்றிய தகவல் கிடைத்துள்ளது.",
+            "documents": f"“{best['scheme_name']}” திட்டத்திற்கான ஆவண விவரங்கள் கிடைத்துள்ளன.",
+            "application": f"“{best['scheme_name']}” திட்டத்திற்கான விண்ணப்ப விவரங்கள் கிடைத்துள்ளன.",
+            "details": f"உங்கள் கேள்விக்குப் பொருந்தக்கூடிய திட்டம்: “{best['scheme_name']}”.",
+        }[focus]
     source_text = str(best.get(focus, "")).strip() or best.get("snippet", "")
 
     if not source_text:
         return "I found matching scheme records, but the available data does not contain enough information to answer that question."
+
+    if tamil_question:
+        return (
+            f"{intro}\n\n{source_text}\n\n"
+            "இந்த பதில் GovAssist-இல் உள்ள திட்டத் தகவல்களை மட்டுமே அடிப்படையாகக் கொண்டது. "
+            "இது அதிகாரப்பூர்வ தகுதியை உறுதிப்படுத்தாது. முழு விவரங்களையும் சம்பந்தப்பட்ட "
+            "அரசு இணையதளத்தில் சரிபார்க்கவும்."
+        )
 
     return (
         f"{intro}\n\n{source_text}\n\n"
@@ -302,7 +352,8 @@ def ask_assistant(request: AssistantRequest):
 
     # Step 1: retrieve directly from the local dataset first. This avoids an
     # extra Gemini round trip for questions that already match scheme records.
-    search_query = question
+    tamil_hints = _tamil_search_hints(question)
+    search_query = f"{question} {tamil_hints}".strip()
     sources = _retrieve(search_query, df, limit=5)
 
     # Use AI query rewriting only as a fallback when direct retrieval finds
