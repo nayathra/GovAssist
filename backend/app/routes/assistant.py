@@ -279,7 +279,7 @@ def _fallback_answer(sources: list[dict], question: str) -> str:
 
 
 @router.post("")
-async def ask_assistant(request: AssistantRequest):
+def ask_assistant(request: AssistantRequest):
     question = request.question.strip()
 
     if not question:
@@ -293,11 +293,17 @@ async def ask_assistant(request: AssistantRequest):
     df = load_schemes()
     client = _gemini_client()
 
-    # Step 1: multilingual query understanding.
-    search_query = _rewrite_query_with_ai(client, question) if client else question
-
-    # Step 2: retrieve relevant scheme records from the local 3,400-row dataset.
+    # Step 1: retrieve directly from the local dataset first. This avoids an
+    # extra Gemini round trip for questions that already match scheme records.
+    search_query = question
     sources = _retrieve(search_query, df, limit=5)
+
+    # Use AI query rewriting only as a fallback when direct retrieval finds
+    # nothing (for example, multilingual or differently phrased questions).
+    if not sources and client:
+        search_query = _rewrite_query_with_ai(client, question)
+        if search_query and search_query != question:
+            sources = _retrieve(search_query, df, limit=5)
 
     if not sources:
         return {
