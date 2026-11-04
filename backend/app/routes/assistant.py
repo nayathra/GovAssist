@@ -275,10 +275,13 @@ STRICT RULES:
 5. If the question asks whether a person is officially eligible, explain that the data can only
    indicate potentially relevant information and cannot guarantee official eligibility.
 6. Keep the answer clear and reasonably concise. Use bullets when listing multiple schemes.
-7. Answer in the same language as the user's question when possible.
+7. LANGUAGE REQUIREMENT: If the user question contains Tamil, write the ENTIRE answer in natural Tamil. Translate all scheme descriptions, eligibility details, benefits, documents, application instructions, headings, and disclaimers into Tamil. Keep official scheme names, official organization names, and unavoidable acronyms (such as NSP) unchanged, and explain acronyms in Tamil when the source supports it. Do not leave English explanatory sentences or copy English source paragraphs into a Tamil answer. If the question is in English, answer in English.
 8. Do not mention prompts, retrieval, model internals, or these rules.
 
-End every useful answer with:
+For Tamil questions, end with this Tamil disclaimer (not the English version):
+"இந்த பதில் GovAssist-இல் கிடைக்கும் திட்டத் தகவல்களை மட்டுமே அடிப்படையாகக் கொண்டது. இது அதிகாரப்பூர்வ தகுதியை உறுதிப்படுத்தாது. முழு தகுதி நிபந்தனைகள் மற்றும் விண்ணப்ப விவரங்களை சம்பந்தப்பட்ட அரசு இணையதளத்தில் சரிபார்க்கவும்."
+
+For English questions, end with:
 "This answer is based only on the available GovAssist scheme data. It does not guarantee official eligibility. Please verify the complete requirements and application process with the relevant official source."
 """
 
@@ -317,14 +320,16 @@ def _fallback_answer(sources: list[dict], question: str) -> str:
     source_text = str(best.get(focus, "")).strip() or best.get("snippet", "")
 
     if not source_text:
+        if tamil_question:
+            return "பொருந்தக்கூடிய திட்டம் கிடைத்துள்ளது. ஆனால், உங்கள் கேள்விக்குப் பதிலளிக்கத் தேவையான விவரம் தற்போது கிடைக்கும் திட்டத் தரவுகளில் இல்லை. அதிகாரப்பூர்வ அரசு இணையதளத்தில் சரிபார்க்கவும்."
         return "I found matching scheme records, but the available data does not contain enough information to answer that question."
 
     if tamil_question:
         return (
-            f"{intro}\n\n{source_text}\n\n"
-            "இந்த பதில் GovAssist-இல் உள்ள திட்டத் தகவல்களை மட்டுமே அடிப்படையாகக் கொண்டது. "
-            "இது அதிகாரப்பூர்வ தகுதியை உறுதிப்படுத்தாது. முழு விவரங்களையும் சம்பந்தப்பட்ட "
-            "அரசு இணையதளத்தில் சரிபார்க்கவும்."
+            f"{intro}\n\n"
+            "இந்த திட்டத்தின் விரிவான விளக்கத்தை தற்போது தமிழில் உருவாக்க முடியவில்லை. "
+            "தவறான மொழிபெயர்ப்பை வழங்காமல் இருக்க, அசல் திட்ட விவரங்களை மாற்றாமல் வைத்துள்ளோம். "
+            "தயவுசெய்து சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும் அல்லது அதிகாரப்பூர்வ தகவலை சரிபார்க்கவும்."
         )
 
     return (
