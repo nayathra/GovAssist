@@ -89,6 +89,7 @@ function AppContent() {
   if (page === "schemes") {
     return (
       <SchemesPage
+        onBack={() => setPage(user ? "dashboard" : "landing")}
         onViewDetails={(schemeSlug) => {
           setSelectedScheme(schemeSlug)
           setPage("details")
