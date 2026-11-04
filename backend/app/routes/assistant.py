@@ -8,8 +8,10 @@ from app.data_loader import load_schemes
 
 try:
     from google import genai
+    from google.genai import types
 except ImportError:  # pragma: no cover - optional until AI is configured
     genai = None
+    types = None
 
 
 router = APIRouter(prefix="/api/assistant", tags=["AI Assistant"])
@@ -163,7 +165,12 @@ def _gemini_client():
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key or genai is None:
         return None
-    return genai.Client(api_key=api_key)
+    # Bound upstream model latency so the retrieval-based fallback can answer
+    # instead of leaving the user waiting indefinitely.
+    return genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(timeout=15000),
+    )
 
 
 def _generate_text(client, prompt: str) -> str:
