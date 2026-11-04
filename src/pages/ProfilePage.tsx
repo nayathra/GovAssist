@@ -122,8 +122,10 @@ const inputClass =
 
 const ProfilePage = ({
   onFindSchemes,
+  onBack,
 }: {
   onFindSchemes: (profile: Profile) => void
+  onBack: () => void
 }) => {
   const [profile, setProfile] = useState<Profile>(initialProfile)
 
@@ -162,7 +164,7 @@ const ProfilePage = ({
           </div>
 
           <button
-            onClick={() => window.history.back()}
+            onClick={onBack}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-[#073b6f] hover:bg-slate-50"
           >
             ← Back
